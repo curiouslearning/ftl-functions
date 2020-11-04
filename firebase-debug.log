@@ -1,0 +1,72 @@
+[debug] [2020-10-21T19:46:49.021Z] ----------------------------------------------------------------------
+[debug] [2020-10-21T19:46:49.022Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js emulators:start --import=.\test_database
+[debug] [2020-10-21T19:46:49.023Z] CLI Version:   8.9.2
+[debug] [2020-10-21T19:46:49.023Z] Platform:      win32
+[debug] [2020-10-21T19:46:49.023Z] Node Version:  v12.18.3
+[debug] [2020-10-21T19:46:49.023Z] Time:          Wed Oct 21 2020 15:46:49 GMT-0400 (Eastern Daylight Time)
+[debug] [2020-10-21T19:46:49.023Z] Env Overrides: FIRESTORE_EMULATOR_HOST
+[debug] [2020-10-21T19:46:49.023Z] ----------------------------------------------------------------------
+[debug] [2020-10-21T19:46:49.024Z] 
+[debug] [2020-10-21T19:46:49.030Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2020-10-21T19:46:49.030Z] > authorizing via signed-in user
+[info] i  emulators: Starting emulators: functions, firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions, firestore"}}
+[debug] [2020-10-21T19:46:51.042Z] [hub] writing locator at C:\Users\Eric\AppData\Local\Temp\hub-follow-the-learners.json
+[info] i  emulators: Shutting down emulators. {"metadata":{"emulator":{"name":"hub"},"message":"Shutting down emulators."}}
+[info] i  hub: Stopping emulator hub {"metadata":{"emulator":{"name":"hub"},"message":"Stopping emulator hub"}}
+[debug] [2020-10-21T19:46:51.048Z] Error: ENOENT: no such file or directory, lstat 'C:\Users\Eric\Documents\bin\followthelearners\functions\test_database'
+    at Object.lstatSync (fs.js:1007:3)
+    at findExportMetadata (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:169:32)
+    at Object.<anonymous> (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:232:41)
+    at Generator.next (<anonymous>)
+    at fulfilled (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:5:58)
+    at processTicksAndRejections (internal/process/task_queues.js:97:5)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2020-10-21T19:49:13.309Z] ----------------------------------------------------------------------
+[debug] [2020-10-21T19:49:13.310Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js emulators:start --import=.\test_database
+[debug] [2020-10-21T19:49:13.310Z] CLI Version:   8.9.2
+[debug] [2020-10-21T19:49:13.311Z] Platform:      win32
+[debug] [2020-10-21T19:49:13.311Z] Node Version:  v12.18.3
+[debug] [2020-10-21T19:49:13.311Z] Time:          Wed Oct 21 2020 15:49:13 GMT-0400 (Eastern Daylight Time)
+[debug] [2020-10-21T19:49:13.311Z] Env Overrides: FIRESTORE_EMULATOR_HOST
+[debug] [2020-10-21T19:49:13.311Z] ----------------------------------------------------------------------
+[debug] [2020-10-21T19:49:13.311Z] 
+[debug] [2020-10-21T19:49:13.318Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2020-10-21T19:49:13.318Z] > authorizing via signed-in user
+[info] i  emulators: Starting emulators: functions, firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions, firestore"}}
+[debug] [2020-10-21T19:49:15.331Z] [hub] writing locator at C:\Users\Eric\AppData\Local\Temp\hub-follow-the-learners.json
+[info] i  emulators: Shutting down emulators. {"metadata":{"emulator":{"name":"hub"},"message":"Shutting down emulators."}}
+[info] i  hub: Stopping emulator hub {"metadata":{"emulator":{"name":"hub"},"message":"Stopping emulator hub"}}
+[debug] [2020-10-21T19:49:15.337Z] Error: ENOENT: no such file or directory, lstat 'C:\Users\Eric\Documents\bin\followthelearners\functions\test_database'
+    at Object.lstatSync (fs.js:1007:3)
+    at findExportMetadata (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:169:32)
+    at Object.<anonymous> (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:232:41)
+    at Generator.next (<anonymous>)
+    at fulfilled (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:5:58)
+    at processTicksAndRejections (internal/process/task_queues.js:97:5)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2020-10-21T19:49:39.703Z] ----------------------------------------------------------------------
+[debug] [2020-10-21T19:49:39.705Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js emulators:start --import=.\test_database
+[debug] [2020-10-21T19:49:39.705Z] CLI Version:   8.9.2
+[debug] [2020-10-21T19:49:39.705Z] Platform:      win32
+[debug] [2020-10-21T19:49:39.705Z] Node Version:  v12.18.3
+[debug] [2020-10-21T19:49:39.706Z] Time:          Wed Oct 21 2020 15:49:39 GMT-0400 (Eastern Daylight Time)
+[debug] [2020-10-21T19:49:39.706Z] Env Overrides: FIRESTORE_EMULATOR_HOST
+[debug] [2020-10-21T19:49:39.706Z] ----------------------------------------------------------------------
+[debug] [2020-10-21T19:49:39.706Z] 
+[debug] [2020-10-21T19:49:39.712Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2020-10-21T19:49:39.712Z] > authorizing via signed-in user
+[info] i  emulators: Starting emulators: functions, firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions, firestore"}}
+[debug] [2020-10-21T19:49:41.725Z] [hub] writing locator at C:\Users\Eric\AppData\Local\Temp\hub-follow-the-learners.json
+[info] i  emulators: Shutting down emulators. {"metadata":{"emulator":{"name":"hub"},"message":"Shutting down emulators."}}
+[info] i  hub: Stopping emulator hub {"metadata":{"emulator":{"name":"hub"},"message":"Stopping emulator hub"}}
+[debug] [2020-10-21T19:49:41.731Z] Error: ENOENT: no such file or directory, lstat 'C:\Users\Eric\Documents\bin\followthelearners\functions\test_database'
+    at Object.lstatSync (fs.js:1007:3)
+    at findExportMetadata (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:169:32)
+    at Object.<anonymous> (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:232:41)
+    at Generator.next (<anonymous>)
+    at fulfilled (C:\Users\Eric\AppData\Roaming\npm\node_modules\firebase-tools\lib\emulator\controller.js:5:58)
+    at processTicksAndRejections (internal/process/task_queues.js:97:5)
+[error] 
+[error] Error: An unexpected error has occurred.
