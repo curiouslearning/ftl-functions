@@ -1,11 +1,20 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functionToTest = require('../../functions/forceRegionRecalculation');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+adminInitStub = sinon.stub(admin, 'initializeApp');
 
+beforeEach(() => {
+    adminInitStub.restore();
+    adminInitStub = sinon.stub(admin, 'initializeApp');
 
+})
+
+afterEach(() => {
+    adminInitStub.restore();
+})
 describe('functions/forceRegionRecalculation', function () {
+    const functionToTest = require('../../functions/forceRegionRecalculation');
 
     let updateMethod = sinon.stub();
     let collectionStub;
@@ -69,10 +78,9 @@ describe('functions/forceRegionRecalculation', function () {
         console.error.restore();
         console.log.restore();
         adminInitStub.restore();
-
     })
 
-    describe.skip('forceRegionRecalculation', function () {
+    describe('forceRegionRecalculation', function () {
         it('should iterate over all regions and create a set of batches and commit them', async () => {
 
             //TODO stub the batch

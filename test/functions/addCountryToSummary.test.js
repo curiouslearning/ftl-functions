@@ -1,12 +1,19 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const myFunction = require('../../functions/addCountryToSummary');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
-adminInitStub = sinon.stub(admin, 'initializeApp');
+beforeEach(() => {
+    adminInitStub.restore();
+    adminInitStub = sinon.stub(admin, 'initializeApp');
+})
+
+afterEach(() => {
+    adminInitStub.restore();
+})
 
 describe('functions/addCountryToSummary', function () {
+    const myFunction = require('../../functions/addCountryToSummary');
 
     let updateMethod = sinon.stub();
     let collectionStub;
