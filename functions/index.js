@@ -449,6 +449,7 @@ function writeBatches(batches) {
   }
   return 'Success!';
 }
+
 function delayOneSecond(callback) {
   setTimeout(callback, 1050);
 }
@@ -680,38 +681,38 @@ function getRegionsForCountry(docRef) {
   return docRef.get();
 }
 
-exports.addCountryToSummary = functions.firestore
-    .document('loc_ref/{documentId}')
-    .onCreate((snap, context)=>{
-      const country = snap.data().country;
-      let regions = snap.data().regions;
-      let regionCounts = [];
-      let countrySum = 0;
-      regions.forEach((region)=>{
-        if (region.hasOwnProperty('learnerCount') && region.learnerCount >=0) {
-          regionCounts.push({
-            region: region.region,
-            learnerCount: region.learnerCount,
-          });
-          countrySum += region.learnerCount;
-        }
-      });
-      let summary = admin.firestore().collection('aggregate_data')
-          .doc('RegionSummary');
-      return summary.get().then((doc)=>{
-        let countries = doc.data().countries;
-        countries.push({
-          country: country,
-          learnerCount: countrySum,
-          regions: regionCounts,
-        });
-        return countries;
-      }).then((countries)=>{
-        return summary.update({countries: countries});
-      }).catch((err)=>{
-        console.error(err);
-      });
-    });
+// exports.addCountryToSummary = functions.firestore
+//     .document('loc_ref/{documentId}')
+//     .onCreate((snap, context)=>{
+//       const country = snap.data().country;
+//       let regions = snap.data().regions;
+//       let regionCounts = [];
+//       let countrySum = 0;
+//       regions.forEach((region)=>{
+//         if (region.hasOwnProperty('learnerCount') && region.learnerCount >=0) {
+//           regionCounts.push({
+//             region: region.region,
+//             learnerCount: region.learnerCount,
+//           });
+//           countrySum += region.learnerCount;
+//         }
+//       });
+//       let summary = admin.firestore().collection('aggregate_data')
+//           .doc('RegionSummary');
+//       return summary.get().then((doc)=>{
+//         let countries = doc.data().countries;
+//         countries.push({
+//           country: country,
+//           learnerCount: countrySum,
+//           regions: regionCounts,
+//         });
+//         return countries;
+//       }).then((countries)=>{
+//         return summary.update({countries: countries});
+//       }).catch((err)=>{
+//         console.error(err);
+//       });
+//     });
 
 exports.updateDonationLearnerCount = functions.firestore
     .document('/user_pool/{documentId}')

@@ -1,2 +1,5 @@
 node_modules/
 keys/
+firebase-debug.log
+.idea/
+.DS_Store
