@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+//TODO - Add error handling for retrieving the aggregate_data document
 exports.addCountryToSummary = functions.firestore
     .document('loc_ref/{documentId}')
     .onCreate(async (snap, context)=>{

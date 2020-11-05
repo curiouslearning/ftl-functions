@@ -9,7 +9,6 @@ admin.initializeApp();
 const transporter = nodemailer.createTransport(mailConfig);
 const gmaps = new Client({});
 
-const BATCHMAX = 495;
 const DEFAULTCPL = 0.25;
 const CONTINENTS = [
   'Africa',
@@ -20,55 +19,7 @@ const CONTINENTS = [
   'Oceania',
 ];
 
-exports.forceRegionRecalculation = functions.https.onRequest(async (req, res)=>{
-  const locRef = admin.firestore().collection('loc_ref');
-  const batchMax = 495;
-  let batchSize = 0;
-  let batchCount = 0;
-  let batches = [];
-  batches[batchCount] = admin.firestore().batch();
-  locRef.get().then((snap)=>{
-    snap.forEach((doc, i) => {
-      if (batchSize >= batchMax) {
-        batchSize = 0;
-        batchCount++;
-        batches[batchCount] = admin.firestore().batch();
-      }
-      let id = doc.id;
-      let data = doc.data();
-      let countrySum = 0;
-      data.regions.forEach((region, i)=>{
-        let index = i;
-        updateCountForRegion(data.country, region.region).then((sum)=>{
-          data.regions[index].learnerCount = sum;
-          countrySum += data.regions[index].learnerCount;
-          return;
-        }).catch((err)=>{
-          console.error(err);
-        });
-        i++;
-      });
-      data.learnerCount = countrySum;
-      batches[batchCount].set(locRef.doc(id), data, {merge: true});
-      batchSize++;
-    });
-    for (let i=0; i < batches.length; i++) {
-      setTimeout((batch, i) =>{
-        batch.commit().then(()=>{
-          console.log('committed batch ', i);
-          return;
-        }).catch((err)=>{
-          console.error(err);
-        });
-      }, 1050, batches[i], i);
-    }
-    res.status(200).end();
-    return;
-  }).catch((err)=>{
-    console.error(err);
-    res.status(501).end();
-  });
-});
+
 
 exports.updateAggregates = functions.https.onRequest(async (req, res) =>{
   console.log('hello');
@@ -659,60 +610,27 @@ exports.disableCampaign = functions.firestore.document('/user_pool/{docID}')
       }
     });
 
-function getPinForAddress(address) {
-  let markerLoc = {lat: 0, lng: 0};
-  return gmaps.geocode({
-    params: {
-      address: address,
-      key: 'AIzaSyDEl20cTMsc72W_TasuK5PlWYIgMrzyuAU',
-    },
-    timeout: 1000,
-  }).then((r) => {
-    if (r.data.results[0]) {
-      markerLoc = r.data.results[0].geometry.location;
-    }
-    return markerLoc;
-  }).catch((e) => {
-    console.log(e.response.data.error_message);
-  });
-}
+// function getPinForAddress(address) {
+//   let markerLoc = {lat: 0, lng: 0};
+//   return gmaps.geocode({
+//     params: {
+//       address: address,
+//       key: 'AIzaSyDEl20cTMsc72W_TasuK5PlWYIgMrzyuAU',
+//     },
+//     timeout: 1000,
+//   }).then((r) => {
+//     if (r.data.results[0]) {
+//       markerLoc = r.data.results[0].geometry.location;
+//     }
+//     return markerLoc;
+//   }).catch((e) => {
+//     console.log(e.response.data.error_message);
+//   });
+// }
 
 function getRegionsForCountry(docRef) {
   return docRef.get();
 }
-
-// exports.addCountryToSummary = functions.firestore
-//     .document('loc_ref/{documentId}')
-//     .onCreate((snap, context)=>{
-//       const country = snap.data().country;
-//       let regions = snap.data().regions;
-//       let regionCounts = [];
-//       let countrySum = 0;
-//       regions.forEach((region)=>{
-//         if (region.hasOwnProperty('learnerCount') && region.learnerCount >=0) {
-//           regionCounts.push({
-//             region: region.region,
-//             learnerCount: region.learnerCount,
-//           });
-//           countrySum += region.learnerCount;
-//         }
-//       });
-//       let summary = admin.firestore().collection('aggregate_data')
-//           .doc('RegionSummary');
-//       return summary.get().then((doc)=>{
-//         let countries = doc.data().countries;
-//         countries.push({
-//           country: country,
-//           learnerCount: countrySum,
-//           regions: regionCounts,
-//         });
-//         return countries;
-//       }).then((countries)=>{
-//         return summary.update({countries: countries});
-//       }).catch((err)=>{
-//         console.error(err);
-//       });
-//     });
 
 exports.updateDonationLearnerCount = functions.firestore
     .document('/user_pool/{documentId}')
@@ -1022,79 +940,79 @@ async function updateCountForCampaign(campaignID) {
   });
 }
 
-function updateCountForRegion(country, region) {
-  console.log(country, region);
-  if (country === undefined) {
-    return new Promise((resolve)=>{
-      resolve('resolved');
-    });
-  }
-  if (region === undefined) {
-    region = 'no-region';
-  }
-  return admin.firestore().collection('loc_ref').doc(country)
-      .get().then((doc)=>{
-        const data = doc.data();
-        const newCount = data.learnerCount + 1;
-        let regions = data.regions;
-        let foundRegion = false;
-        for (const regionIndex in regions) {
-          if (regions[regionIndex] && regions[regionIndex].region === region) {
-            foundRegion = true;
-            regions[regionIndex].learnerCount++;
-            if (!regions[regionIndex].hasOwnProperty('pin') ||
-              (regions[regionIndex]['pin'].lat === 0 &&
-              regions[regionIndex]['pin'].lng === 0)) {
-              return getPinForAddress(country + ', ' + region).then((markerLoc) => {
-                regions[regionIndex]['pin'] = {
-                  lat: markerLoc.lat,
-                  lng: markerLoc.lng,
-                };
-                return doc.ref.set({
-                  learnerCount: newCount,
-                  regions: regions,
-                }, {merge: true}).catch((err)=>{
-                  console.error(err);
-                });
-              });
-            }
-          }
-        }
-        if (!foundRegion) {
-          return getPinForAddress(country + ', ' + region).then((markerLoc) => {
-            console.log('--------------------- FOUND LOCATION: ' + markerLoc);
-            regions.push({
-              region: region,
-              pin: {
-                lat: markerLoc.lat,
-                lng: markerLoc.lng,
-              },
-              learnerCount: 1,
-              streetViews: {
-                headingValues: [0],
-                locations: [
-                ],
-              },
-            });
-            return doc.ref.set({
-              learnerCount: newCount,
-              regions: regions,
-            }, {merge: true}).catch((err)=>{
-              console.error(err);
-            });
-          });
-        }
-        doc.ref.set({
-          learnerCount: newCount,
-          regions: regions,
-        }, {merge: true}).catch((err)=>{
-          console.error(err);
-        });
-        return newCount;
-      }).catch((err) => {
-        console.error(err);
-      });
-}
+// function updateCountForRegion(country, region) {
+//   console.log(country, region);
+//   if (country === undefined) {
+//     return new Promise((resolve)=>{
+//       resolve('resolved');
+//     });
+//   }
+//   if (region === undefined) {
+//     region = 'no-region';
+//   }
+//   return admin.firestore().collection('loc_ref').doc(country)
+//       .get().then((doc)=>{
+//         const data = doc.data();
+//         const newCount = data.learnerCount + 1;
+//         let regions = data.regions;
+//         let foundRegion = false;
+//         for (const regionIndex in regions) {
+//           if (regions[regionIndex] && regions[regionIndex].region === region) {
+//             foundRegion = true;
+//             regions[regionIndex].learnerCount++;
+//             if (!regions[regionIndex].hasOwnProperty('pin') ||
+//               (regions[regionIndex]['pin'].lat === 0 &&
+//               regions[regionIndex]['pin'].lng === 0)) {
+//               return getPinForAddress(country + ', ' + region).then((markerLoc) => {
+//                 regions[regionIndex]['pin'] = {
+//                   lat: markerLoc.lat,
+//                   lng: markerLoc.lng,
+//                 };
+//                 return doc.ref.set({
+//                   learnerCount: newCount,
+//                   regions: regions,
+//                 }, {merge: true}).catch((err)=>{
+//                   console.error(err);
+//                 });
+//               });
+//             }
+//           }
+//         }
+//         if (!foundRegion) {
+//           return getPinForAddress(country + ', ' + region).then((markerLoc) => {
+//             console.log('--------------------- FOUND LOCATION: ' + markerLoc);
+//             regions.push({
+//               region: region,
+//               pin: {
+//                 lat: markerLoc.lat,
+//                 lng: markerLoc.lng,
+//               },
+//               learnerCount: 1,
+//               streetViews: {
+//                 headingValues: [0],
+//                 locations: [
+//                 ],
+//               },
+//             });
+//             return doc.ref.set({
+//               learnerCount: newCount,
+//               regions: regions,
+//             }, {merge: true}).catch((err)=>{
+//               console.error(err);
+//             });
+//           });
+//         }
+//         doc.ref.set({
+//           learnerCount: newCount,
+//           regions: regions,
+//         }, {merge: true}).catch((err)=>{
+//           console.error(err);
+//         });
+//         return newCount;
+//       }).catch((err) => {
+//         console.error(err);
+//       });
+// }
 
 function findObjWithProperty(arr, prop, val) {
   for (let i=0; i < arr.length; i++) {
