@@ -15,7 +15,7 @@ describe('functions/forceRegionRecalculation', function () {
     beforeEach(function () {
         sinon.spy(console, 'error');
         sinon.spy(console, 'log');
-        adminInitStub = sinon.stub(admin, 'initializeApp');
+        // adminInitStub = sinon.stub(admin, 'initializeApp');
 
         docStub = {
             get: () => {return new Promise((res, rej) => {
@@ -72,8 +72,8 @@ describe('functions/forceRegionRecalculation', function () {
 
     })
 
-    describe('forceRegionRecalculation', function () {
-        it.only('should iterate over all regions and create a set of batches and commit them', async () => {
+    describe.skip('forceRegionRecalculation', function () {
+        it('should iterate over all regions and create a set of batches and commit them', async () => {
 
             //TODO stub the batch
 

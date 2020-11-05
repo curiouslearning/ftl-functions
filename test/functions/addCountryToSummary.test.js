@@ -4,6 +4,7 @@ const myFunction = require('../../functions/addCountryToSummary');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
+adminInitStub = sinon.stub(admin, 'initializeApp');
 
 describe('functions/addCountryToSummary', function () {
 
@@ -14,7 +15,7 @@ describe('functions/addCountryToSummary', function () {
 
     beforeEach(function () {
         sinon.spy(console, 'error');
-        adminInitStub = sinon.stub(admin, 'initializeApp');
+        // adminInitStub = sinon.stub(admin, 'initializeApp');
 
         docStub = {
             get: () => {return new Promise((res, rej) => {
