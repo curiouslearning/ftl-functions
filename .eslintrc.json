@@ -8,6 +8,7 @@
   ],
   "extends": "eslint:recommended",
   "rules": {
+    "linebreak-style": ["error", "windows"],
     // Removed rule "disallow the use of console" from recommended eslint rules
     "no-console": "off",
 
