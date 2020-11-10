@@ -25,25 +25,11 @@ describe('functions/BatchManager', function() {
     }};
   };
   beforeEach(function() {
-    batchStub = sinon.stub(firestore, 'batch');
-    batchStub.returns({
-      set: ()=>sinon.fake(),
-      update: ()=>sinon.fake(),
-      delete: ()=>sinon.fake(),
-      commit: ()=>sinon.fake(()=>{
-        return new Promise((res, rej)=>{
-          resolve('Success!');
-        });
-      }),
-    });
-    collectionStub = sinon.stub(firestore, 'collection');
-    collectionStub.returns({
-      collection: 'user_pool',
-      doc: (doc)=> sinon.fake((doc)=>{
-        return '/user_pool/'+doc;
-      }),
-    });
     manager = new myFunction.BatchManager();
+    commitStub = sinon.stub(manager.batches[0], 'commit');
+    commitStub.returns(new Promise((res, rej)=>{
+      res('success!');
+    }));
     docList = [];
     for (let i=0; i < 1000; i++) {
       docList.push(getFakeUser(i));
@@ -51,14 +37,12 @@ describe('functions/BatchManager', function() {
   });
 
   afterEach(function() {
-    batchStub.restore();
-    collectionStub.restore();
+    commitStub.restore();
     manager = null;
   });
 
   describe('BatchManager', function() {
     it('should create an arry of batch objects with one element', async ()=>{
-      batchStub.restore();
       manager = new myFunction.BatchManager();
       manager.batches.length.should.equal(1);
       manager.batches[0].should.be.an.instanceOf(admin.firestore.WriteBatch);
@@ -98,10 +82,10 @@ describe('functions/BatchManager', function() {
       spy.should.have.been.calledOnce;
     });
     it('should add an operation to the most recent batch', async ()=>{
+      const spy = sinon.spy(manager.batches[0], 'set');
       let docRef = firestore.collection('user_pool').doc(docList[0].id);
-      manager.set(docRef, docList[0].data, true);
-      const length = manager.batches.length;
-      manager.batches[0].set().should.have.been.calledOnce;
+      await manager.set(docRef, docList[0].data, true);
+      spy.should.have.been.calledOnce;
     });
     it('should throw an error if the batch could not be updated', async ()=>{
 
@@ -112,13 +96,14 @@ describe('functions/BatchManager', function() {
     it('should call updateBatch', async ()=>{
       const spy = sinon.spy(manager, 'updateBatch');
       let docRef = firestore.collection('user_pool').doc(docList[0].id);
-      manager.update(docRef, docList[0].data);
+      await manager.update(docRef, docList[0].data);
       spy.should.have.been.calledOnce;
     });
     it('should add an operation to the most recent batch', async ()=>{
       let docRef = firestore.collection('user_pool').doc(docList[0].id);
-      manager.update(docRef, docList[0].data);
-      manager.batches[0].update().should.have.been.calledOnce;
+      const spy = sinon.spy(manager.batches[0], 'update');
+      await manager.update(docRef, docList[0].data);
+      spy.should.have.been.calledOnce;
     });
     it('should throw an error if the batch could not be updated', async ()=>{
     });
@@ -133,9 +118,9 @@ describe('functions/BatchManager', function() {
     });
     it('should add an operation to the most recent batch', async ()=>{
       let docRef = firestore.collection('user_pool').doc(docList[0].id);
-      manager.delete(docRef);
-      const length = manager.batches.length;
-      manager.batches[0].delete().should.have.been.calledOnce;
+      const spy = sinon.spy(manager.batches[0], 'delete');
+      await manager.delete(docRef);
+      spy.should.have.been.calledOnce;
     });
     it('should throw an error if the batch could not be updated', async ()=>{
 
@@ -144,22 +129,45 @@ describe('functions/BatchManager', function() {
 
   describe('commit', function() {
     it('should call commit on each batch in the array', async ()=>{
-      let docRef = firestore.collection('user_pool').doc('fake-user');
-      manager.set(docRef, docStub, false);
-      const res = manager.commit();
-      manager.batches[0].commit().should.have.been.calledOnce
+      let docRef = firestore.collection('user_pool').doc(docList[0].id);
+      manager.set(docRef, docList[0], false);
+      await manager.commit();
+      commitStub.should.have.been.calledOnce;
     });
     it('should wait 1050ms between actions', async ()=>{
-
+      for (let i = 0; i < 500; i++) {
+        if (docList[i]) {
+          const id = docList[i].id;
+          let docRef = firestore.collection('user_pool').doc(id);
+          manager.set(docRef, docList[i].data, true);
+        }
+      }
+      manager.batches.length.should.equal(2);
+      const secondBatch = sinon.stub(manager.batches[1], 'commit');
+      secondBatch.returns(new Promise((res, rej)=>{
+        res('success!');
+      }));
+      const clock = sinon.useFakeTimers();
+      const res = manager.commit();
+      await clock.tick(1050);
+      commitStub.should.have.been.calledOnce;
+      secondBatch.should.not.have.been.called;
+      await clock.tick(1050);
+      commitStub.should.have.been.calledOnce;
+      secondBatch.should.have.been.calledOnce;
+      secondBatch.restore();
+      clock.restore();
     });
     it('should return true on successful commit', async ()=>{
-      let manager = new myFunction.BatchManager();
-      const spy = sinon.spy(manager, 'commit');
-      const res = manager.commit();
-      spy.should.have.returned(true);
+      const res = await manager.commit();
+      res.should.equal(true);
     });
-    it('should throw an error on unsuccessful commit', async ()=>{
-
+    it('should log an error on unsuccessful commit', async ()=>{
+      commitStub.returns(new Promise((res, rej)=>{
+         throw new TypeError('you failed!');
+      }));
+      const res = await manager.commit();
+      commitStub.should.have.thrown;
     });
   });
 });
