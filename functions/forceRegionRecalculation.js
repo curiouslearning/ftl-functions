@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 const { config } = require('../config/functionConfig')
-require('./helpers/firebaseHelpers');
+const helpers = require('./helpers/firebaseHelpers');
 
 exports.forceRegionRecalculation = functions.https.onRequest(async (req, res)=>{
     const locRef = admin.firestore().collection('loc_ref');
@@ -12,7 +12,7 @@ exports.forceRegionRecalculation = functions.https.onRequest(async (req, res)=>{
     let batches = [];
     batches[batchCount] = admin.firestore().batch();
     locRef.get().then(async (snap)=>{
-        snap.forEach((doc, i) => {
+        snap.forEach(async (doc, i) => {
             if (batchSize >= batchMax) {
                 batchSize = 0;
                 batchCount++;
@@ -21,16 +21,16 @@ exports.forceRegionRecalculation = functions.https.onRequest(async (req, res)=>{
             let id = doc.id;
             let data = doc.data();
             let countrySum = 0;
-            data.regions.forEach((region, i) => {
-                let index = i;
-                updateCountForRegion(data.country, region.region).then((sum)=>{
-                    data.regions[index].learnerCount = sum;
+            let index = 0;
+            for(const region of data.regions) {
+                try {
+                    data.regions[index].learnerCount = await helpers.updateCountForRegion(data.country, region.region);
                     countrySum += data.regions[index].learnerCount;
-                }).catch((err)=>{
-                    console.error(err);
-                });
-                i++;
-            });
+                } catch (err) {
+                    console.error(`Error when updating count for region: ${err}`);
+                }
+            }
+
             data.learnerCount = countrySum;
             batches[batchCount].set(locRef.doc(id), data, {merge: true});
             batchSize++;

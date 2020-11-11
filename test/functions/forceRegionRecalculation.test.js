@@ -2,12 +2,13 @@ const test = require('firebase-functions-test')();
 const sinon = require('sinon');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-adminInitStub = sinon.stub(admin, 'initializeApp');
+const firestore = admin.firestore();
+const helpers = require('../../functions/helpers/firebaseHelpers');
 
 beforeEach(() => {
     adminInitStub.restore();
     adminInitStub = sinon.stub(admin, 'initializeApp');
-
+    helpers.updateCountForRegion = sinon.stub().returns(new Promise((res) => {return res(1);}))
 })
 
 afterEach(() => {
@@ -24,14 +25,14 @@ describe('functions/forceRegionRecalculation', function () {
     beforeEach(function () {
         sinon.spy(console, 'error');
         sinon.spy(console, 'log');
-        // adminInitStub = sinon.stub(admin, 'initializeApp');
 
         docStub = {
             get: () => {return new Promise((res, rej) => {
                 res({ data: () => {
                         return { countries: [{learnerCount: 1, country: 'fake-country', regions: 'fake-region'}]}}})
             })},
-            update: updateMethod
+            update: updateMethod,
+            doc: firestore.collection('user_pool').doc('fake-document-path')
         };
 
         snap = [
@@ -66,11 +67,16 @@ describe('functions/forceRegionRecalculation', function () {
     });
 
     const run = async (snap) => {
+        const firestoreDoc = firestore.collection('user_pool').doc('fake-document-path');
         collectionStub = sinon.stub(admin.firestore(), 'collection');
-        collectionStub.returns({doc: () => docStub})
+        collectionStub.returns({doc: () => firestoreDoc, get: async () => {return new Promise((res) => {return res(snap);});} })
 
-        const wrapped = test.wrap(functionToTest.forceRegionRecalculation);
-        await wrapped(snap);
+        const req = {};
+        const res = {
+            status: sinon.stub(),
+            end: sinon.stub()
+        }
+        await functionToTest.forceRegionRecalculation(req, res);
     }
 
     afterEach(() => {
@@ -81,7 +87,7 @@ describe('functions/forceRegionRecalculation', function () {
     })
 
     describe('forceRegionRecalculation', function () {
-        it('should iterate over all regions and create a set of batches and commit them', async () => {
+        it.only('should iterate over all regions and create a set of batches and commit them', async () => {
 
             //TODO stub the batch
 

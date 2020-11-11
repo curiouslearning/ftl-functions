@@ -1,11 +1,11 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
+const admin = require('firebase-admin');
+adminInitStub = sinon.stub(admin, 'initializeApp');
 const myFunction = require('../../functions/batchManager');
 const functions = require('firebase-functions');
-const admin = require('firebase-admin');
 const firestore = admin.firestore();
 
-// adminInitStub = sinon.stub(admin, 'initializeApp');
 
 describe('functions/BatchManager', function() {
   const date = new Date(Date.now());
@@ -42,7 +42,7 @@ describe('functions/BatchManager', function() {
   });
 
   describe('BatchManager', function() {
-    it('should create an arry of batch objects with one element', async ()=>{
+    it('should create an array of batch objects with one element', async ()=>{
       manager = new myFunction.BatchManager();
       manager.batches.length.should.equal(1);
       manager.batches[0].should.be.an.instanceOf(admin.firestore.WriteBatch);

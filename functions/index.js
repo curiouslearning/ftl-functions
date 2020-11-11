@@ -3,11 +3,10 @@ const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const cors = require('cors')({origin: true});
 const mailConfig = require('./keys/nodemailerConfig.json');
-const {Client, Status} = require('@googlemaps/google-maps-services-js');
 
 admin.initializeApp();
 const transporter = nodemailer.createTransport(mailConfig);
-const gmaps = new Client({});
+
 
 const DEFAULTCPL = 0.25;
 const CONTINENTS = [
