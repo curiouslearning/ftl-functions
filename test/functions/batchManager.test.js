@@ -1,6 +1,6 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const myFunction = require('../../functions/BatchManager');
+const myFunction = require('../../functions/batchManager');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const firestore = admin.firestore();
@@ -144,9 +144,7 @@ describe('functions/BatchManager', function() {
       }
       manager.batches.length.should.equal(2);
       const secondBatch = sinon.stub(manager.batches[1], 'commit');
-      secondBatch.returns(new Promise((res, rej)=>{
-        res('success!');
-      }));
+      secondBatch.returns(new Promise((res, rej)=>{}));
       const clock = sinon.useFakeTimers();
       const res = manager.commit();
       await clock.tick(1050);
@@ -166,7 +164,7 @@ describe('functions/BatchManager', function() {
       commitStub.returns(new Promise((res, rej)=>{
          throw new TypeError('you failed!');
       }));
-      const res = await manager.commit();
+      await manager.commit();
       commitStub.should.have.thrown;
     });
   });
