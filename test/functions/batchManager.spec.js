@@ -1,12 +1,21 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
+const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 adminInitStub = sinon.stub(admin, 'initializeApp');
 const { BatchManager } = require('../../functions/batchManager');
 const firestore = admin.firestore();
 var sandbox = require('sinon').createSandbox();
+beforeEach(()=>{
+  adminInitStub = sinon.stub(admin, 'initializeApp');
+});
+
+afterEach(()=>{
+  adminInitStub.restore();
+});
 
 describe('functions/BatchManager', function() {
+  const firestore = admin.firestore();
   const date = new Date(Date.now());
   const getFakeUser = (i)=>{
     const id = 'fake-user;' + i;
