@@ -5,21 +5,8 @@ const admin = require('firebase-admin');
 const firestore = admin.firestore();
 const helpers = require('../../functions/helpers/firebaseHelpers');
 const { BatchManager } = require('../../functions/batchManager');
-beforeEach(() => {
-    adminInitStub.restore();
-    adminInitStub = sinon.stub(admin, 'initializeApp');
-    helpers.updateCountForRegion = sinon.stub().returns(new Promise((res) => {return res(1);}))
-    sinon.stub(BatchManager.prototype, 'set');
-    sinon.stub(BatchManager.prototype, 'commit');
-    sinon.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
-})
+var sandbox = require('sinon').createSandbox();
 
-afterEach(() => {
-    adminInitStub.restore();
-    BatchManager.prototype.set.restore();
-    BatchManager.prototype.commit.restore();
-    admin.firestore().batch.restore();
-})
 describe('functions/forceRegionRecalculation', function () {
     const functionToTest = require('../../functions/forceRegionRecalculation');
 
@@ -30,6 +17,12 @@ describe('functions/forceRegionRecalculation', function () {
     let res, req;
 
     beforeEach(function () {
+        adminInitStub.restore();
+        adminInitStub = sandbox.stub(admin, 'initializeApp');
+        helpers.updateCountForRegion = sandbox.stub().returns(new Promise((res) => {return res(1);}))
+        sandbox.stub(BatchManager.prototype, 'set');
+        sandbox.stub(BatchManager.prototype, 'commit');
+        sandbox.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
         sinon.spy(console, 'error');
         sinon.spy(console, 'log');
         req = {};
@@ -86,6 +79,7 @@ describe('functions/forceRegionRecalculation', function () {
     }
 
     afterEach(() => {
+        sandbox.restore();
         collectionStub.restore();
         console.error.restore();
         console.log.restore();
@@ -94,7 +88,6 @@ describe('functions/forceRegionRecalculation', function () {
 
     describe('forceRegionRecalculation', function () {
         it('should iterate over all regions and create a set of batches and commit them', async () => {
-            sinon.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
 
             await run(snap);
             BatchManager.prototype.set.should.have.been.calledWith(sinon.match.any, {

@@ -2,10 +2,9 @@ const test = require('firebase-functions-test')();
 const sinon = require('sinon');
 const admin = require('firebase-admin');
 adminInitStub = sinon.stub(admin, 'initializeApp');
-const myFunction = require('../../functions/batchManager');
-const functions = require('firebase-functions');
+const { BatchManager } = require('../../functions/batchManager');
 const firestore = admin.firestore();
-
+var sandbox = require('sinon').createSandbox();
 
 describe('functions/BatchManager', function() {
   const date = new Date(Date.now());
@@ -25,8 +24,8 @@ describe('functions/BatchManager', function() {
     }};
   };
   beforeEach(function() {
-    manager = new myFunction.BatchManager();
-    commitStub = sinon.stub(manager.batches[0], 'commit');
+    manager = new BatchManager();
+    commitStub = sandbox.stub(manager.batches[0], 'commit');
     commitStub.returns(new Promise((res, rej)=>{
       res('success!');
     }));
@@ -37,14 +36,14 @@ describe('functions/BatchManager', function() {
   });
 
   afterEach(function() {
+    sandbox.restore();
     commitStub.restore();
-    manager.batches[0].commit.restore();
     manager = null;
   });
 
   describe('BatchManager', function() {
     it('should create an array of batch objects with one element', async ()=>{
-      manager = new myFunction.BatchManager();
+      manager = new BatchManager();
       manager.batches.length.should.equal(1);
       manager.batches[0].should.be.an.instanceOf(admin.firestore.WriteBatch);
     });
