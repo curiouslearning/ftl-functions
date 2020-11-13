@@ -4,15 +4,21 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const firestore = admin.firestore();
 const helpers = require('../../functions/helpers/firebaseHelpers');
-
+const { BatchManager } = require('../../functions/batchManager');
 beforeEach(() => {
     adminInitStub.restore();
     adminInitStub = sinon.stub(admin, 'initializeApp');
     helpers.updateCountForRegion = sinon.stub().returns(new Promise((res) => {return res(1);}))
+    sinon.stub(BatchManager.prototype, 'set');
+    sinon.stub(BatchManager.prototype, 'commit');
+    sinon.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
 })
 
 afterEach(() => {
     adminInitStub.restore();
+    BatchManager.prototype.set.restore();
+    BatchManager.prototype.commit.restore();
+    admin.firestore().batch.restore();
 })
 describe('functions/forceRegionRecalculation', function () {
     const functionToTest = require('../../functions/forceRegionRecalculation');
@@ -21,10 +27,15 @@ describe('functions/forceRegionRecalculation', function () {
     let collectionStub;
     let docStub;
     let snap;
+    let res, req;
 
     beforeEach(function () {
         sinon.spy(console, 'error');
         sinon.spy(console, 'log');
+        req = {};
+        res = {
+            status: sinon.stub().returns({end: sinon.stub()}),
+        }
 
         docStub = {
             get: () => {return new Promise((res, rej) => {
@@ -49,8 +60,8 @@ describe('functions/forceRegionRecalculation', function () {
                 id: 'fake-id-2',
                 data: () => {
                     return {
-                        regions: [{region: 'fake-region-1', pin: {lat: 1, long: 1}, learnerCount: 1}],
-                        country: 'fake-country-1',
+                        regions: [{region: 'fake-region-2', pin: {lat: 2, long: 2}, learnerCount: 2}],
+                        country: 'fake-country-2',
                     }
                 }
             },
@@ -58,8 +69,8 @@ describe('functions/forceRegionRecalculation', function () {
                 id: 'fake-id-3',
                 data: () => {
                     return {
-                        regions: [{region: 'fake-region-1', pin: {lat: 1, long: 1}, learnerCount: 1}],
-                        country: 'fake-country-1',
+                        regions: [{region: 'fake-region-3', pin: {lat: 3, long: 3}, learnerCount: 3}],
+                        country: 'fake-country-3',
                     }
                 }
             }
@@ -71,11 +82,6 @@ describe('functions/forceRegionRecalculation', function () {
         collectionStub = sinon.stub(admin.firestore(), 'collection');
         collectionStub.returns({doc: () => firestoreDoc, get: async () => {return new Promise((res) => {return res(snap);});} })
 
-        const req = {};
-        const res = {
-            status: sinon.stub(),
-            end: sinon.stub()
-        }
         await functionToTest.forceRegionRecalculation(req, res);
     }
 
@@ -87,15 +93,51 @@ describe('functions/forceRegionRecalculation', function () {
     })
 
     describe('forceRegionRecalculation', function () {
-        it.only('should iterate over all regions and create a set of batches and commit them', async () => {
+        it('should iterate over all regions and create a set of batches and commit them', async () => {
+            sinon.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
 
-            //TODO stub the batch
+            await run(snap);
+            BatchManager.prototype.set.should.have.been.calledWith(sinon.match.any, {
+                regions: snap[0].data().regions ,
+                country: snap[0].data().country,
+                learnerCount: snap[0].data().regions[0].learnerCount
+            }, {merge: true});
+            //TODO assert the second/third calls to the "set" method
+            BatchManager.prototype.commit.should.have.been.calledOnce;
+            res.status.should.have.been.calledWith(200);
+        });
+
+        it('should throw an error when updating the count for the region', async () => {
+            helpers.updateCountForRegion.throws('fake-error');
 
             await run(snap);
 
+            BatchManager.prototype.set.should.not.have.been.called;
+            BatchManager.prototype.commit.should.not.have.been.called;
+            console.error.should.have.been.calledWith('Error when updating count for region: fake-region-1');
+            res.status.should.have.been.calledWith(501);
         });
 
+        it('should throw an error when updating the count for the region', async () => {
+            helpers.updateCountForRegion.throws('fake-error');
 
+            await run(snap);
+
+            BatchManager.prototype.set.should.not.have.been.called;
+            BatchManager.prototype.commit.should.not.have.been.called;
+            console.error.should.have.been.calledWith('Error when updating count for region: fake-region-1');
+            res.status.should.have.been.calledWith(501);
+        });
+
+        it('should throw an error when trying to commit the batch', async () => {
+            BatchManager.prototype.commit.throws('fake-error');
+
+            await run(snap);
+
+            BatchManager.prototype.commit.should.have.been.calledOnce;
+            console.error.should.have.been.calledWith('Error when trying to commit the batches: fake-error');
+            res.status.should.have.been.calledWith(501);
+        });
     })
 })
 

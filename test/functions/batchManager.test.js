@@ -38,6 +38,7 @@ describe('functions/BatchManager', function() {
 
   afterEach(function() {
     commitStub.restore();
+    manager.batches[0].commit.restore();
     manager = null;
   });
 
