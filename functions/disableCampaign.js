@@ -9,22 +9,27 @@ exports.disableCampaign = functions.firestore.document('/user_pool/{docID}')
     .onUpdate((change, context)=>{
       const before = change.before.data();
       const after = change.after.data();
-      if (before.userStatus === unassigned && after.userStatus !== unassigned) {
-        admin.firestore().collection('user_pool')
+      if (before.userStatus === 'unassigned' && after.userStatus !== 'unassigned') {
+        return admin.firestore().collection('user_pool')
             .where('country', '==', after.country)
             .where('sourceCampaign', '==', after.sourceCampaign)
             .where('userStatus', '==', 'unassigned')
             .get().then((snap)=>{
               if (snap.size === 0) {
                 const msgRef = admin.firestore().collection('campaigns')
-                    .doc(campaign);
-                return msgRef.update({isVisible: false});
+                    .doc(after.sourceCampaign);
+                msgRef.update({isVisible: false});
+                return {status: 200, data: `successfully disabled ${after.sourceCampaign}`};
               }
               return new Promise((resolve)=>{
-                resolve('found learners');
+                resolve({status: 200, data: 'found learners'});
               });
             }).catch((err)=>{
-              console.error(err);
+              console.log(err);
+              return {status: 400, data: `encountered error: ${err}`};
             });
       }
+      return new Promise((res, rej)=>{
+        res({status: 200, data: 'success'});
+      });
     });

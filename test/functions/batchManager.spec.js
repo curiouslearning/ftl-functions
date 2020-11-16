@@ -7,6 +7,7 @@ const { BatchManager } = require('../../functions/batchManager');
 const firestore = admin.firestore();
 var sandbox = require('sinon').createSandbox();
 beforeEach(()=>{
+  adminInitStub.restore();
   adminInitStub = sinon.stub(admin, 'initializeApp');
 });
 

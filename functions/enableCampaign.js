@@ -21,11 +21,13 @@ exports.enableCampaign = functions.firestore.document('/user_pool/{docID}').
               });
             } else {
               let id = snap.docs[0].id;
-              return admin.firestore().collection('campaigns').doc(id).update({
+              admin.firestore().collection('campaigns').doc(id).update({
                 isVisible: true,
               });
+              return {status: 200, data: `successfully re-enabled campaign: ${data.country}`}
             }
           }).catch((err)=>{
-            console.error(err);
+            console.log(err);
+            return {status: 400, data: `encountered error! ${err}`};
           });
     });

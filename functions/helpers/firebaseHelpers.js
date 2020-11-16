@@ -1,7 +1,6 @@
 const admin = require('firebase-admin');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
-module.exports = {getPinForAddress, updateCountForRegion, updateCountForCampaign};
 
 const getPinForAddress = (address) => {
     let markerLoc = {lat: 0, lng: 0};
@@ -31,7 +30,7 @@ const updateCountForCampaign = (country, region) => {
     let count = doc.data().learnerCount + 1;
     return doc.ref.update({learnerCount: count}).catch((err)=>{
       console.error(err);
-    })
+    });
   }).catch((err)=>{
     console.error(err);
   });
@@ -201,3 +200,4 @@ function updateMasterLearnerCount(country) {
 }
 
 
+module.exports = {getPinForAddress, updateCountForRegion, updateCountForCampaign};
