@@ -2,6 +2,7 @@ const test = require('firebase-functions-test')();
 const sinon = require('sinon');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const sandbox = require('sinon').createSandbox();
 
 beforeEach(() => {
   adminInitStub.restore();
@@ -10,6 +11,7 @@ beforeEach(() => {
 
 afterEach(() => {
   adminInitStub.restore();
+  sandbox.restore();
 });
 
 describe('functions/disableCampaign', async () => {
@@ -46,19 +48,18 @@ describe('functions/disableCampaign', async () => {
         docID: 'fake-userID',
       },
     };
-    updateStub = sinon.stub(firestore.DocumentReference.prototype, 'update');
+    updateStub = sandbox.stub(firestore.DocumentReference.prototype, 'update');
     updateStub.returns(new Promise((res, rej) => {
       res('success');
     }));
-    getStub = sinon.stub(firestore.Query.prototype, 'get');
+    getStub = sandbox.stub(firestore.Query.prototype, 'get');
     getStub.returns(new Promise((res, rej) => {
       res({size: 0});
     }));
     wrapped = test.wrap(myFunction.disableCampaign);
   });
   afterEach(() => {
-    updateStub.restore();
-    getStub.restore();
+    sandbox.restore();
   });
   it('should only run when a user has been assigned', async () => {
     after = {

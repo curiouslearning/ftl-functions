@@ -2,6 +2,7 @@ const test = require('firebase-functions-test')();
 const sinon = require('sinon');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const sandbox = require('sinon').createSandbox();
 beforeEach(() => {
   adminInitStub.restore();
   adminInitStub = sinon.stub(admin, 'initializeApp');
@@ -9,6 +10,7 @@ beforeEach(() => {
 
 afterEach(() => {
   adminInitStub.restore();
+  sandbox.restore();
 });
 
 describe('functions/checkForDonationEndDate', async () => {
@@ -40,18 +42,17 @@ describe('functions/checkForDonationEndDate', async () => {
         documentId: 'fake-doc',
       },
     };
-    setStub = sinon.stub(admin.firestore.Firestore.DocumentReference.prototype, 'set');
+    setStub = sandbox.stub(admin.firestore.Firestore.DocumentReference.prototype, 'set');
     setStub.resolves();
-    spy = sinon.spy(myFunction.checkForDonationEndDate)
+    spy = sandbox.spy(myFunction.checkForDonationEndDate);
     wrapped = test.wrap(myFunction.checkForDonationEndDate);
     staticTime = admin.firestore.Firestore.Timestamp.now();
-    timeStub = sinon.stub(admin.firestore.Firestore.Timestamp, 'now');
+    timeStub = sandbox.stub(admin.firestore.Firestore.Timestamp, 'now');
     timeStub.returns(staticTime);
   });
 
   afterEach(() => {
-    setStub.restore();
-    timeStub.restore();
+    sandbox.restore();
   });
   it('should only run if the donation is full', async () => {
     after= {data: ()=>{return {percentFilled: 90};}};
@@ -60,11 +61,14 @@ describe('functions/checkForDonationEndDate', async () => {
     setStub.should.not.have.been.called;
   });
   it('should only run if there is no endDate field', async () => {
-    after= {data: ()=>{
-      return {
-        percentFilled: 100,
-        endDate: admin.firestore.Firestore.Timestamp.now(),
-      }}};
+    after= {
+      data: ()=>{
+        return {
+          percentFilled: 100,
+          endDate: admin.firestore.Firestore.Timestamp.now(),
+        };
+      },
+    };
     const change = test.makeChange(before, after);
     wrapped(change, context);
     setStub.should.not.have.been.called;
@@ -89,4 +93,4 @@ describe('functions/checkForDonationEndDate', async () => {
       data: 'encountered an error and could not continue: Fake-Error: you failed!',
     });
   });
-})
+});

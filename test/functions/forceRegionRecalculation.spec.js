@@ -19,7 +19,8 @@ describe('functions/forceRegionRecalculation', function () {
     beforeEach(function () {
         adminInitStub.restore();
         adminInitStub = sandbox.stub(admin, 'initializeApp');
-        helpers.updateCountForRegion = sandbox.stub().returns(new Promise((res) => {return res(1);}))
+        regionStub = sandbox.stub(helpers, 'updateCountForRegion');
+        regionStub.returns(new Promise((res) => {return res(1);}));
         sandbox.stub(BatchManager.prototype, 'set');
         sandbox.stub(BatchManager.prototype, 'commit');
         sandbox.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
@@ -133,4 +134,3 @@ describe('functions/forceRegionRecalculation', function () {
         });
     })
 })
-

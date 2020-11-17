@@ -108,30 +108,6 @@ const updateCountForRegion = (country, region) => {
         });
 }
 
-function updatePercentFilled(snap, context) {
-  let data = snap.data();
-  const docRef = admin.firestore().collection('donor_master')
-      .doc(data.sourceDonor)
-      .collection('donations').doc(context.params.donationId);
-  return admin.firestore().collection('campaigns')
-      .where('campaignID', '==', data.campaignID).get().then((snap)=>{
-        if (snap.empty) {
-          throw new Error('missing campaign document for ', data.campaignID);
-        }
-        return snap.docs[0].data().costPerLearner;
-      }).then((costPerLearner)=>{
-        const amount = data.amount;
-        const learnerCount = data.learnerCount;
-        return (learnerCount/Math.round(amount / costPerLearner))*100;
-      }).then((percent)=>{
-        return docRef.set({
-          percentFilled: Math.round(percent),
-        }, {merge: true});
-      }).catch((err)=>{
-        console.error(err);
-      });
-}
-
 function getCostPerLearner(campaignID) {
   return admin.firestore().collection('campaigns')
       .where('campaignID', '==', campaignID)
@@ -200,4 +176,13 @@ function updateMasterLearnerCount(country) {
 }
 
 
-module.exports = {getPinForAddress, updateCountForRegion, updateCountForCampaign};
+module.exports = {
+  getPinForAddress,
+  updateCountForRegion,
+  updateCountForCampaign,
+  updateMasterLearnerCount,
+  findObjWithProperty,
+  getDonation,
+  getDonorID,
+  getCostPerLearner,
+};

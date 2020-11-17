@@ -4,23 +4,24 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const PassThrough = require('stream').PassThrough;
 const http = require('http');
+const sandbox = require('sinon').createSandbox();
 
 beforeEach(()=>{
   adminInitStub.restore();
   adminInitStub = sinon.stub(admin, 'initializeApp');
-  this.request = sinon.stub(http, 'request');
 });
 
 afterEach(()=>{
   adminInitStub.restore();
-  http.request.restore();
+  sandbox.restore();
 });
 
 describe('functions/logDonation', ()=>{
   const myFunction = require('../../functions/logDonation');
   let docStub;
   beforeEach(()=>{
-    sinon.spy(console, 'error');
+    this.request = sandbox.stub(http, 'request');
+    sandbox.spy(console, 'error');
     docstub = {
       firstName: 'fake-firstName',
       lastName: 'fake-lastName',
@@ -32,14 +33,15 @@ describe('functions/logDonation', ()=>{
     };
   });
   afterEach(()=>{
+    sandbox.restore();
   });
   it('should accept a POST request with args', async ()=>{
     const writeStub = sinon.stub(myFunction, 'writeDonation');
     writeStub.returns(new Promise((res, rej)=>{}));
-    const spy = sinon.spy(myFunction, 'logDonation');
+    const spy = sandbox.spy(myFunction, 'logDonation');
     const expected = JSON.stringify(docStub);
     const request = new PassThrough();
-    const write = sinon.stub(request, 'write');
+    const write = sandbox.stub(request, 'write');
     this.request.returns(request);
     myFunction.logDonation(docStub, function() {});
     spy.should.have.been.calledWith(expected);
