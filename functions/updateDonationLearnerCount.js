@@ -17,12 +17,19 @@ exports.updateDonationLearnerCount = functions.firestore
       }
       if (before.userStatus === 'unassigned'&&
           after.userStatus === 'assigned') {
-        console.log('assigning');
-        const donor = after.sourceDonor;
-        const donation = after.sourceDonation;
-        return updateLocationBreakdownForDonation(donor, donation);
+        try {
+          console.log('assigning');
+          const donor = after.sourceDonor;
+          const donation = after.sourceDonation;
+          if (!donor || !donation) {
+            throw new Error('missing key donation information');
+          }
+          return this.updateLocationBreakdownForDonation(donor, donation);
+        } catch (e) {
+          return {status: 501, data: `encountered an error! ${e}`};
+        }
       }
-      return;
+      return {status: 200, data: `no operation necessary`};
     });
 
 exports.updateLocationBreakdownForDonation = function(donorID, donationID) {
@@ -33,30 +40,32 @@ exports.updateLocationBreakdownForDonation = function(donorID, donationID) {
       .where('sourceDonation', '==', donationID)
       .where('sourceDonor', '==', donorID);
   return poolRef.get().then((snap)=>{
-    if (snap.empty) return {learners: 0, countries: []};
+    if (snap.empty) return {learnerCount: 0, countries: []};
     let countries = [];
     snap.forEach((doc)=>{
       let data = doc.data();
       let index = helpers.findObjWithProperty(countries, 'country', data.country)
       if (index <0) {
-        countries.push({country: data.country, learnerCount: 1, regions: []});
+        countries.push({country: data.country, learnerCount: 1, regions: [{
+          region: data.region,
+          learnerCount: 1,
+        }]});
       } else {
         countries[index].learnerCount++;
-      }
-      let regions = countries[index].regions;
-      let regIndex = helpers.findObjWithProperty(regions, 'region', data.region);
-      if (regIndex <0) {
-        countries[index].regions.push({region: data.region, learnerCount: 1});
-      } else {
-        countries[index].regions[regIndex].learnerCount++;
+        let regions = countries[index].regions;
+        let regIndex = helpers.findObjWithProperty(regions, 'region', data.region);
+        if (regIndex <0) {
+          countries[index].regions.push({region: data.region, learnerCount: 1});
+        } else {
+          countries[index].regions[regIndex].learnerCount++;
+        }
       }
     });
-    return {learners: snap.size, countries: countries};
+    return {learnerCount: snap.size, countries: countries};
   }).then((res)=>{
-    return donationRef.update({learnerCount: res.learners,
-      countries: res.countries}
-    );
+    return donationRef.update(res);
   }).catch((err)=>{
-    console.error(err);
-  })
-}
+    console.log(err);
+    return {status: 501, data: `encountered an error! ${err}`};
+  });
+};
