@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-if (!admin.app) {
+if (!admin.apps.length === 0) {
   admin.initializeApp();
 }
 // if the last user for a country is removed from the pool, disable that

@@ -4,7 +4,9 @@ const admin = require('firebase-admin');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const BatchManager = require('../batchManager').BatchManager;
 const helpers = require('./firebaseHelpers');
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const gmaps = new Client({});
 
 const CONTINENTS = [

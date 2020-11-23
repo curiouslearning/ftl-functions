@@ -2,6 +2,9 @@ const admin = require('firebase-admin');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
 
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const getPinForAddress = (address) => {
     let markerLoc = {lat: 0, lng: 0};
     return gmaps.geocode({
@@ -20,7 +23,7 @@ const getPinForAddress = (address) => {
     });
 }
 
-const updateCountForCampaign = (country, region) => {
+const updateCountForCampaign = (campaignID) => {
   let dbRef = admin.firestore().collection('campaigns');
   return dbRef.where('campaignID', '==', campaignID).get().then((snap)=>{
     if (snap.empty) {
@@ -159,7 +162,7 @@ function findObjWithProperty(arr, prop, val) {
   return -1;
 }
 function updateMasterLearnerCount(country) {
-  const msgRef = firestore.collection('aggregate_data').doc('data');
+  const msgRef = admin.firestore().collection('aggregate_data').doc('data');
   return msgRef.get().then((doc)=>{
     let count = doc.data().allLearnersCount + 1;
     let noCountry = doc.data().allLearnersWithDoNotTrack;

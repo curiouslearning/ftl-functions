@@ -7,8 +7,9 @@ const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const BatchManager = require('./batchManager').BatchManager;
 const helpers = require('./helpers/firebaseHelpers');
 const assignLearners = require('./helpers/assignLearners');
-
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const transporter = nodemailer.createTransport(mailConfig);
 const gmaps = new Client({});
 

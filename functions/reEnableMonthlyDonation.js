@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const helpers = require('./helpers/firebaseHelpers');
-if (!admin.app) {
+if (!admin.apps.length === 0) {
   admin.initializeApp();
 }
 exports.reEnableMonthlyDonation = functions.firestore

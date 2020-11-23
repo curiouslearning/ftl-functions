@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-if (!admin.app) {
+if (!admin.apps.length === 0) {
   admin.initializeApp();
 }
 // If a user is added to a country with a disabled campaign, re-enable it

@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 
 //TODO - Add error handling for retrieving the aggregate_data document
 exports.addCountryToSummary = functions.firestore

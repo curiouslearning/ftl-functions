@@ -2,11 +2,30 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const cors = require('cors')({origin: true});
-const mailConfig = require('./keys/nodemailerConfig.json');
+const mailConfig = require('../keys/nodemailerConfig.json');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const batchManager = require('./batchManager');
-
-admin.initializeApp();
+const addCountryToSummary = require('./addCountryToSummary');
+exports.addCountryToSummary = addCountryToSummary.addCountryToSummary;
+const checkDonation = require('./checkForDonationEndDate');
+exports.checkForDonationEndDate = checkDonation.checkForDonationEndDate;
+const disable = require('./disableCampaign');
+exports.disableCampaign = disable.disableCampaign;
+const enable = require('./enableCampaign');
+exports.enableCampaign = enable.enableCampaign;
+const logDonation = require('./logDonation');
+exports.logDonation = logDonation.logDonation;
+const onNewUser = require('./onNewUser');
+exports.onNewUser = onNewUser.onNewUser;
+const reEnable = require('./reEnableMonthlyDonation');
+exports.reEnableMonthlyDonation = reEnable.reEnableMonthlyDonation;
+const updateDonation = require('./updateDonationLearnerCount');
+exports.updateDonationLearnerCount = updateDonation.updateDonationLearnerCount;
+const onDonation = require('./onDonationIncrease');
+exports.onDonationIncrease = onDonation.onDonationIncrease;
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const transporter = nodemailer.createTransport(mailConfig);
 
 
@@ -19,8 +38,6 @@ const CONTINENTS = [
   'Europe',
   'Oceania',
 ];
-
-
 
 exports.updateAggregates = functions.https.onRequest(async (req, res) =>{
   console.log('hello');

@@ -1,7 +1,9 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const helpers = require('./helpers/firebaseHelpers');
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const firestore = admin.firestore();
 exports.onDonationIncrease = functions.firestore
     .document('donor_master/{uid}/donations/{donationId}')
@@ -32,12 +34,11 @@ exports.updatePercentFilled = (snap, context) => {
         const learnerCount = data.learnerCount;
         return (learnerCount/Math.round(amount / costPerLearner))*100;
       }).then((percent)=>{
-        docRef.update(
+        return docRef.update({
           percentFilled: Math.round(percent),
         });
-        return {status: 200, data: `successfully updated donation:  ${context.params.donationId}. Percent filled is: ${percent}`};
       }).catch((err)=>{
         console.log(err);
-        return {status: 200, data: `encountered an error! ${err}`};
+        return {status: 501, data: `encountered an error! ${err}`};
       });
 };
