@@ -31,7 +31,7 @@ exports.assign = function(donorID, donationID, country) {
 // and assign to donor according to donation amount and campaigns cost/learner
 exports.assignInitialLearners= function(donorID, donationID, country) {
   // Grab the donation object we're migrating learners to
-  const donorRef = getDonation(donorID, donationID);
+  const donorRef = helpers.getDonation(donorID, donationID);
   // the user pool we'll be pulling learners from
   const poolRef = admin.firestore().collection('user_pool')
       .where('country', '==', country).where('userStatus', '==', 'unassigned')
@@ -62,13 +62,13 @@ exports.assignInitialLearners= function(donorID, donationID, country) {
     }
     const amount = vals[0].data.amount;
     const costPerLearner = vals[2].data.costPerLearner;
-    const cap = calculateUserCount(amount, 0, costPerLearner);
+    const cap = this.calculateUserCount(amount, 0, costPerLearner);
     console.log('cap is: ', cap);
-    return batchWriteLearners(vals[1], vals[0], cap);
+    return this.batchWriteLearners(vals[1], vals[0], cap);
   }).catch((err)=>{
     console.error(err);
   });
-}
+};
 
 // special assignment case that matches learners from any country
 exports.assignAnyLearner = function(donorID, donationID) {
@@ -105,15 +105,15 @@ exports.assignAnyLearner = function(donorID, donationID) {
         vals[0].data.sourceDonor);
     const amount = vals[0].data.amount;
     const costPerLearner = DEFAULTCPL;
-    const learnerCount = calculateUserCount(amount, 0, costPerLearner);
-    return batchWriteLearners(vals[1], vals[0], learnerCount);
+    const learnerCount = this.calculateUserCount(amount, 0, costPerLearner);
+    return this.batchWriteLearners(vals[1], vals[0], learnerCount);
   }).catch((err)=>{
     console.error(err);
   });
-}
+};
 
 exports.assignLearnersByContinent= function(donorID, donationID, continent) {
-  const donorRef = getDonation(donorID, donationID)
+  const donorRef = getDonation(donorID, donationID);
   const poolRef = admin.firestore().collection('user_pool')
       .where('continent', '==', continent)
       .where('userStatus', '==', 'unassigned').get().then((snapshot)=>{
@@ -138,10 +138,10 @@ exports.assignLearnersByContinent= function(donorID, donationID, continent) {
     }
     const amount = vals[0].data.amount;
     const costPerLearner = vals[2].data.costPerLearner;
-    const cap = calculateUserCount(amount, 0, costPerLearner);
-    return batchWriteLearners(vals[1], 0, cap);
+    const cap = this.calculateUserCount(amount, 0, costPerLearner);
+    return this.batchWriteLearners(vals[1], 0, cap);
   });
-}
+};
 
 // add learners with country and region data to the front of the queue
 exports.prioritizeLearnerQueue = function(queue) {
@@ -158,7 +158,7 @@ exports.prioritizeLearnerQueue = function(queue) {
     }
   });
   return prioritizedQueue;
-}
+};
 
 // algorithm to calculate how many learners to assign to a donation
 exports.calculateUserCount = function(amount, learnerCount, costPerLearner) {
@@ -166,7 +166,7 @@ exports.calculateUserCount = function(amount, learnerCount, costPerLearner) {
   const learnerMax = Math.round(amount/costPerLearner);
   const maxDailyIncrease = Math.round(learnerMax/DONATIONFILLTIMELINE);
   return learnerCount + maxDailyIncrease;
-}
+};
 
 // collect learner re-assign operations in batches
 // each batch is less than the size of the consecutive document edit limit
@@ -176,7 +176,7 @@ exports.batchWriteLearners = function(snapshot, donation, learnerCount) {
   const donationRef = admin.firestore().collection('donor_master').doc(donorID)
       .collection('donations').doc(donation.id);
   const poolRef = admin.firestore().collection('user_pool');
-  snapshot.docs = prioritizeLearnerQueue(snapshot);
+  snapshot.docs = this.prioritizeLearnerQueue(snapshot);
   console.log('pool of size: ', snapshot.size);
   let batchManager = new BatchManager();
   for (let i=0; i < learnerCount; i++) {
@@ -187,8 +187,8 @@ exports.batchWriteLearners = function(snapshot, donation, learnerCount) {
     data.sourceDonor = donorID;
     data['sourceDonation'] = donation.id;
     data.userStatus = 'assigned';
-    data['assignedOn'] = admin.firestore.Timestamp.now();
+    data['assignedOn'] = admin.firestore.Firestore.Timestamp.now();
     batchManager.set(poolRef.doc(learnerID), data, true);
   }
   batchManager.commit();
-}
+};
