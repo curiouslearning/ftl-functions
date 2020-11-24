@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
+const DEFAULTCPL = 1;
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -111,20 +112,25 @@ const updateCountForRegion = (country, region) => {
         });
 }
 
-function getCostPerLearner(campaignID) {
+const getCostPerLearner = (campaignID) => {
   return admin.firestore().collection('campaigns')
       .where('campaignID', '==', campaignID)
       .get().then((snap)=>{
         if (snap.empty) {
           throw new Error('can\'t find campaign with ID: ', campaignID);
         }
+        if (!snap.docs[0].data().costPerLearner) {
+          console.warn(`${campaignID} has no cost per learner associated!`);
+          console.warn('using default cost per learner');
+          return DEFAULTCPL;
+        }
         return snap.docs[0].data().costPerLearner;
       }).catch((err)=>{
         console.error(err);
       });
-}
+};
 
-function getDonorID(email) {
+const getDonorID = (email) => {
   return admin.auth().getUserByEmail(email)
       .then((user)=>{
         return user.uid;
@@ -134,9 +140,9 @@ function getDonorID(email) {
           return '';
         } else throw new Error(err);
       });
-}
+};
 
-function getDonation(donorID, donationID) {
+const getDonation = (donorID, donationID) => {
   return admin.firestore().collection('donor_master').doc(donorID)
       .collection('donations').doc(donationID)
       .get().then((doc)=>{
@@ -151,17 +157,18 @@ function getDonation(donorID, donationID) {
       }).catch((err)=>{
         console.error(err);
       });
-}
+};
 
-function findObjWithProperty(arr, prop, val) {
+const findObjWithProperty = (arr, prop, val) => {
   for (let i=0; i < arr.length; i++) {
     if (arr[i].hasOwnProperty(prop) && arr[i][prop] === val) {
       return i;
     }
   }
   return -1;
-}
-function updateMasterLearnerCount(country) {
+};
+
+const updateMasterLearnerCount = (country) => {
   const msgRef = admin.firestore().collection('aggregate_data').doc('data');
   return msgRef.get().then((doc)=>{
     let count = doc.data().allLearnersCount + 1;
@@ -176,7 +183,7 @@ function updateMasterLearnerCount(country) {
   }).catch((err)=>{
     console.error(err);
   });
-}
+};
 
 
 module.exports = {

@@ -10,7 +10,6 @@ const assignLearners = require('./helpers/assignLearners');
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-const transporter = nodemailer.createTransport(mailConfig);
 const gmaps = new Client({});
 
 const DEFAULTCPL = 0.25;
@@ -159,6 +158,7 @@ exports.createDonor = function(params) {
 };
 
 exports.generateNewLearnersEmail = function(name, email, url) {
+  const transporter = nodemailer.createTransport(mailConfig);
   const capitalized = name.charAt(0).toUpperCase();
   const formattedName = capitalized + name.slice(1);
 

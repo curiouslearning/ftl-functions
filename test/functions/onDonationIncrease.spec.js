@@ -34,6 +34,7 @@ describe('functions/onDonationIncrease', async () => {
           campaignID: 'fake-campaign',
           sourceDonor: 'fake-donor',
           learnerCount: 20,
+          endDate: admin.firestore.Firestore.Timestamp.now(),
         };
       },
     };
@@ -46,13 +47,14 @@ describe('functions/onDonationIncrease', async () => {
           campaignID: 'fake-campaign',
           sourceDonor: 'fake-donor',
           learnerCount: 20,
+          endDate: admin.firestore.Firestore.Timestamp.now(),
         };
       },
     };
 
     context = {
       params: {
-        donationID: 'fake-donation',
+        donationId: 'fake-donation',
       },
     };
 
@@ -81,13 +83,13 @@ describe('functions/onDonationIncrease', async () => {
   afterEach(() => {
     sandbox.restore();
   });
-  it('should return a 400 error', async () => {
+  it('should return a 501 error', async () => {
     helperStub.restore();
     updateStub.rejects('Fake-Error', 'you failed!');
     const change = test.makeChange(before, after);
     const res = await wrapped(change, context);
     res.should.deep.equal({
-      status: 400,
+      status: 501,
       data: 'encountered an error! Fake-Error: you failed!',
     });
   });
@@ -125,9 +127,6 @@ describe('functions/onDonationIncrease', async () => {
     helperStub.restore();
     const change = test.makeChange(before, after);
     const res = await wrapped(change, context);
-    res.should.deep.equal({
-      status: 200,
-      data: `successfully updated donation: fake-donation. Percent filled is: 50`,
-    });
+    res.should.equal('success');
   });
 });

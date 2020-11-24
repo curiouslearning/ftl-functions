@@ -4,6 +4,8 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const PassThrough = require('stream').PassThrough;
 const http = require('http');
+const nodemailer = require('nodemailer');
+const Mailer = require('nodemailer/lib/Mailer');
 const sandbox = require('sinon').createSandbox();
 
 beforeEach(()=>{
@@ -19,8 +21,6 @@ describe('functions/logDonation', async () => {
   const helpers = require('../../functions/helpers/firebaseHelpers');
   const assignLearners = require('../../functions/helpers/assignLearners');
   const myFunction= require('../../functions/logDonation');
-  const nodemailer = require('nodemailer');
-  const Mailer = require('nodemailer/lib/Mailer');
   const auth = admin.auth();
   const firestore = admin.firestore.Firestore;
   describe('functions/logDonation/logDonation', ()=>{
@@ -295,12 +295,13 @@ describe('functions/logDonation', async () => {
       url = 'fake-url';
       transport = {
         sendMail: (data, callback) => {
-          callback(null, 'okay');
+          callback(null, {response: 'okay'});
         },
       };
-      sendMail = sandbox.stub(nodemailer, 'createTransport').returns(transport);
-      mailer = sandbox.stub(Mailer.prototype, 'sendMail')
-      mailer.callsArgWith(1, null, 'okay');
+      sendMail = sandbox.stub(nodemailer, 'createTransport');
+      sendMail.returns(transport);
+      mailer = sandbox.stub(Mailer.prototype, 'sendMail');
+      mailer.callsArgWith(1, null, 'success');
     });
     afterEach(() => {
       sandbox.restore();
@@ -315,11 +316,12 @@ describe('functions/logDonation', async () => {
       sandbox.spy(console, 'error');
       transport = {
         sendMail: (data, callback) => {
-          const err = new Error();
+          const err = new Error('you failed');
           callback(err, null);
         },
       };
-      mailer.callsArgWith(1, new Error(), null);
+      sendMail.returns(transport);
+      // mailer.callsArgWith(1, new Error(), null);
       await myFunction.generateNewLearnersEmail(name, email, url);
       console.error.should.have.been.called;
     });
