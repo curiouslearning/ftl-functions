@@ -113,7 +113,7 @@ exports.assignAnyLearner = function(donorID, donationID) {
 };
 
 exports.assignLearnersByContinent= function(donorID, donationID, continent) {
-  const donorRef = getDonation(donorID, donationID);
+  const donorRef = helpers.getDonation(donorID, donationID);
   const poolRef = admin.firestore().collection('user_pool')
       .where('continent', '==', continent)
       .where('userStatus', '==', 'unassigned').get().then((snapshot)=>{
@@ -164,7 +164,7 @@ exports.prioritizeLearnerQueue = function(queue) {
 exports.calculateUserCount = function(amount, learnerCount, costPerLearner) {
   const DONATIONFILLTIMELINE = 7; // minimum days to fill a donation
   const learnerMax = Math.round(amount/costPerLearner);
-  const maxDailyIncrease = Math.round(learnerMax/DONATIONFILLTIMELINE);
+  const maxDailyIncrease = Math.round(learnerMax/DONATIONFILLTIMELINE) || 1;
   return learnerCount + maxDailyIncrease;
 };
 
