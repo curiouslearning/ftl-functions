@@ -137,9 +137,9 @@ exports.assignLearnersByContinent= function(donorID, donationID, continent) {
       });
     }
     const amount = vals[0].data.amount;
-    const costPerLearner = vals[2].data.costPerLearner;
+    const costPerLearner = vals[2].data().costPerLearner;
     const cap = this.calculateUserCount(amount, 0, costPerLearner);
-    return this.batchWriteLearners(vals[1], 0, cap);
+    return this.batchWriteLearners(vals[1], vals[0], cap);
   });
 };
 

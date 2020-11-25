@@ -34,7 +34,7 @@ describe('functions/enableCampaign', async () => {
       params: {},
     };
     updateStub = sandbox.stub(firestore.DocumentReference.prototype, 'update');
-    updateStub.returns(new Promise((res, rej)=>{resolve('success');}));
+    updateStub.returns(new Promise((res, rej)=>{res('success');}));
     getStub = sandbox.stub(firestore.Query.prototype, 'get');
     getStub.returns(new Promise((res, rej) => {
       let snap = {
