@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  	allow read, write: if request.auth.token.admin == true;
+  	match /donor_master/{donorID}{
+    	allow create: if request.auth.uid == request.resource.data.ownerUID;
+      allow read, update, delete: if request.auth.uid == resource.data.ownerUID;
+    }
+    match /donor_master/{donorID}/donations{
+      allow create: if request.auth.uid == request.resource.data.ownerUID;
+      allow read, update, delete: if request.auth.uid == resource.data.ownerUID;
+    }  
+    match /{path=**}/donations/users{
+        allow read: if request.auth.uid == true;
+    }
+    match /loc_ref{
+        allow read: if true;
+    }
+    match /campaigns/{campaign}{
+        allow read: if true;
+    }
+    match /learner_progress_reference{
+        allow read: if true;
+    }	
+  }
+}

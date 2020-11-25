@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const config = require('../config/functionConfig')
 const helpers = require('./helpers/firebaseHelpers');
 const { BatchManager } = require('./batchManager');

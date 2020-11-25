@@ -1,7 +1,11 @@
 const admin = require('firebase-admin');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
+const DEFAULTCPL = 1;
 
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const getPinForAddress = (address) => {
     let markerLoc = {lat: 0, lng: 0};
     return gmaps.geocode({
@@ -18,6 +22,22 @@ const getPinForAddress = (address) => {
     }).catch((e) => {
         console.log(e.response.data.error_message);
     });
+}
+
+const updateCountForCampaign = (campaignID) => {
+  let dbRef = admin.firestore().collection('campaigns');
+  return dbRef.where('campaignID', '==', campaignID).get().then((snap)=>{
+    if (snap.empty) {
+      throw new Error('could not find campaign with id: ', campaignID);
+    }
+    const doc = snap.docs[0];
+    let count = doc.data().learnerCount + 1;
+    return doc.ref.update({learnerCount: count}).catch((err)=>{
+      console.error(err);
+    });
+  }).catch((err)=>{
+    console.error(err);
+  });
 }
 
 const updateCountForRegion = (country, region) => {
@@ -92,4 +112,87 @@ const updateCountForRegion = (country, region) => {
         });
 }
 
-module.exports = {getPinForAddress, updateCountForRegion};
+const getCostPerLearner = (campaignID) => {
+  return admin.firestore().collection('campaigns')
+      .where('campaignID', '==', campaignID)
+      .get().then((snap)=>{
+        if (snap.empty) {
+          throw new Error('can\'t find campaign with ID: ', campaignID);
+        }
+        if (!snap.docs[0].data().costPerLearner) {
+          console.warn(`${campaignID} has no cost per learner associated!`);
+          console.warn('using default cost per learner');
+          return DEFAULTCPL;
+        }
+        return snap.docs[0].data().costPerLearner;
+      }).catch((err)=>{
+        console.error(err);
+      });
+};
+
+const getDonorID = (email) => {
+  return admin.auth().getUserByEmail(email)
+      .then((user)=>{
+        return user.uid;
+      }).catch((err)=>{
+        if (err.code === 'auth/user-not-found') {
+          console.log('No Donor found for email: ', email);
+          return '';
+        } else throw new Error(err);
+      });
+};
+
+const getDonation = (donorID, donationID) => {
+  return admin.firestore().collection('donor_master').doc(donorID)
+      .collection('donations').doc(donationID)
+      .get().then((doc)=>{
+        if (!doc.exists) {
+          throw new Error(
+              donorID,
+              ' is missing Donation Document: ',
+              donationID,
+          );
+        }
+        return {id: doc.id, data: doc.data()};
+      }).catch((err)=>{
+        console.error(err);
+      });
+};
+
+const findObjWithProperty = (arr, prop, val) => {
+  for (let i=0; i < arr.length; i++) {
+    if (arr[i].hasOwnProperty(prop) && arr[i][prop] === val) {
+      return i;
+    }
+  }
+  return -1;
+};
+
+const updateMasterLearnerCount = (country) => {
+  const msgRef = admin.firestore().collection('aggregate_data').doc('data');
+  return msgRef.get().then((doc)=>{
+    let count = doc.data().allLearnersCount + 1;
+    let noCountry = doc.data().allLearnersWithDoNotTrack;
+    if (country === 'no-country') {
+      noCountry++;
+    }
+    return msgRef.update({
+      allLearnersCount: count,
+      allLearnersWithDoNotTrack: noCountry,
+    });
+  }).catch((err)=>{
+    console.error(err);
+  });
+};
+
+
+module.exports = {
+  getPinForAddress,
+  updateCountForRegion,
+  updateCountForCampaign,
+  updateMasterLearnerCount,
+  findObjWithProperty,
+  getDonation,
+  getDonorID,
+  getCostPerLearner,
+};

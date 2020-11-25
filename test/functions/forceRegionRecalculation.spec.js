@@ -7,7 +7,7 @@ const helpers = require('../../functions/helpers/firebaseHelpers');
 const { BatchManager } = require('../../functions/batchManager');
 var sandbox = require('sinon').createSandbox();
 
-describe('functions/forceRegionRecalculation', function () {
+describe('functions/forceRegionRecalculation', function() {
     const functionToTest = require('../../functions/forceRegionRecalculation');
 
     let updateMethod = sinon.stub();
@@ -19,7 +19,8 @@ describe('functions/forceRegionRecalculation', function () {
     beforeEach(function () {
         adminInitStub.restore();
         adminInitStub = sandbox.stub(admin, 'initializeApp');
-        helpers.updateCountForRegion = sandbox.stub().returns(new Promise((res) => {return res(1);}))
+        regionStub = sandbox.stub(helpers, 'updateCountForRegion');
+        regionStub.returns(new Promise((res) => {return res(1);}));
         sandbox.stub(BatchManager.prototype, 'set');
         sandbox.stub(BatchManager.prototype, 'commit');
         sandbox.stub(admin.firestore(), 'batch').returns({set: sinon.stub(), commit: sinon.stub()});
@@ -72,7 +73,7 @@ describe('functions/forceRegionRecalculation', function () {
 
     const run = async (snap) => {
         const firestoreDoc = firestore.collection('user_pool').doc('fake-document-path');
-        collectionStub = sinon.stub(admin.firestore(), 'collection');
+        collectionStub = sandbox.stub(admin.firestore(), 'collection');
         collectionStub.returns({doc: () => firestoreDoc, get: async () => {return new Promise((res) => {return res(snap);});} })
 
         await functionToTest.forceRegionRecalculation(req, res);
@@ -86,12 +87,12 @@ describe('functions/forceRegionRecalculation', function () {
         adminInitStub.restore();
     })
 
-    describe('forceRegionRecalculation', function () {
+    describe('forceRegionRecalculation', function() {
         it('should iterate over all regions and create a set of batches and commit them', async () => {
 
             await run(snap);
             BatchManager.prototype.set.should.have.been.calledWith(sinon.match.any, {
-                regions: snap[0].data().regions ,
+                regions: snap[0].data().regions,
                 country: snap[0].data().country,
                 learnerCount: snap[0].data().regions[0].learnerCount
             }, {merge: true});
@@ -133,4 +134,3 @@ describe('functions/forceRegionRecalculation', function () {
         });
     })
 })
-
