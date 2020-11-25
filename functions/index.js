@@ -175,7 +175,7 @@ function getCostPerLearner(campaignID) {
       .where('campaignID', '==', campaignID)
       .get().then((snap)=>{
         if (snap.empty) {
-          throw new Error('can\'t find campaign with ID: ', campaignID);
+          throw new Error(`can't find campaign with ID: ${campaignID}`, campaignID);
         }
         return snap.docs[0].data().costPerLearner;
       }).catch((err)=>{
@@ -322,9 +322,9 @@ async function assignLearnersByContinent(donorID, donationID, continent) {
       });
     }
     const amount = vals[0].data.amount;
-    const costPerLearner = vals[2].data.costPerLearner;
+    const costPerLearner = vals[2].data().costPerLearner;
     const cap = calculateUserCount(amount, 0, costPerLearner);
-    return batchWriteLearners(vals[1], 0, cap);
+    return batchWriteLearners(vals[1], vals[0], cap);
   });
 }
 
