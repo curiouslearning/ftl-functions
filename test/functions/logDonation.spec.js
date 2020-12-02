@@ -42,7 +42,6 @@ describe('functions/logDonation', async () => {
       docStub = {
         body: {
           firstName: 'fake-firstName',
-          lastName: 'fake-lastName',
           email: 'fake@email.biz',
           amount: '5.45',
           coveredByDonor: '0.45',
@@ -67,7 +66,6 @@ describe('functions/logDonation', async () => {
       await run();
       writeStub.should.have.been.calledWith({
         firstName: 'fake-firstName',
-        lastName: 'fake-lastName',
         email: 'fake@email.biz',
         timestamp: stubTime,
         amount: 5,
@@ -92,7 +90,6 @@ describe('functions/logDonation', async () => {
       await run();
       writeStub.should.have.been.calledWith(sinon.match({
         firstName: 'fake-firstName',
-        lastName: 'fake-lastName',
         email: 'fake@email.biz',
         timestamp: stubTime,
         amount: 'MISSING',
@@ -121,7 +118,6 @@ describe('functions/logDonation', async () => {
       stubTime = firestore.Timestamp.now();
       params = {
         firstName: 'fake-firstName',
-        lastName: 'fake-lastName',
         email: 'fake@email.biz',
         amount: 5,
         campaignID: 'fake-campaign',
@@ -129,6 +125,7 @@ describe('functions/logDonation', async () => {
         referralSource: 'fake-referral',
         frequency: 'one-time',
         timestamp: stubTime,
+        stripeEventId: 'fake-event',
       };
       fakeUser = {
         uid: 'fake-donor',
@@ -155,9 +152,9 @@ describe('functions/logDonation', async () => {
     it('should call assign with the correct params', async () => {
       await myFunction.writeDonation(params);
       assignLearners.assign.should.have.been.calledWith(
-          'fake-donor',
+          fakeUser.uid,
           'fake-donation',
-          'fake-country'
+          params.country,
       );
     });
     it('should call createUser with the correct params', async () => {
@@ -171,7 +168,6 @@ describe('functions/logDonation', async () => {
       await myFunction.writeDonation(params);
       firestore.DocumentReference.prototype.set.should.have.been.calledWith({
         firstName: 'fake-firstName',
-        lastName: 'fake-lastName',
         email: 'fake@email.biz',
         dateCreated: stubTime,
         donorID: 'fake-donor',
@@ -184,6 +180,7 @@ describe('functions/logDonation', async () => {
         learnerCount: 0,
         sourceDonor: 'fake-donor',
         amount: 5,
+        stripeEventId: 'fake-event',
         costPerLearner: 0.25,
         frequency: 'one-time',
         countries: [],
@@ -250,7 +247,6 @@ describe('functions/logDonation', async () => {
       stubTime = firestore.Timestamp.now();
       params = {
         firstName: 'fake-firstName',
-        lastName: 'fake-lastName',
         email: 'fake@email.biz',
         amount: 5,
         campaignID: 'fake-campaign',
@@ -278,7 +274,6 @@ describe('functions/logDonation', async () => {
       await myFunction.createDonor(params);
       firestore.DocumentReference.prototype.set.should.have.been.calledWith({
         firstName: 'fake-firstName',
-        lastName: 'fake-lastName',
         email: 'fake@email.biz',
         dateCreated: stubTime,
         donorID: 'fake-donor',

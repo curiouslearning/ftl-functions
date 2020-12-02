@@ -44,16 +44,27 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
     metadata = intent.metadata;
     let coveredByDonor = metadata.transaction_fee_covered_by_donor;
     if (coveredByDonor) {
-      coveredByDonor = Number(coveredByDonor.replace('$'));
+      coveredByDonor = Number(coveredByDonor.replace('$', ''));
       amount = amount - coveredByDonor;
     }
-    const splitString = metadata.utm_source.split('|');
+    let splitString;
+    let campaignID;
+    let country;
+    let referralSource;
+    try {
+      splitString = metadata.utm_source.split('|');
+      campaignID = splitString[0] || 'MISSING';
+      country = splitString[1] || 'MISSING';
+      referralSource = splitString[2] || 'MISSING';
+    } catch (e) {
+      campaignID = 'MISSING';
+      country = 'MISSING';
+      referralSource = 'MISSING';
+    }
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
-    const campaignID = splitString[0] || 'MISSING';
-    const country = splitString[1] || 'MISSING';
-    const referralSource = splitString[2] || 'MISSING';
-    const donationObject = {
+    const params = {
+      stripeEventId: id,
       firstName: firstName,
       email: email,
       amount: amount,
@@ -62,15 +73,17 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
       country: country,
       referralSource: referralSource,
     };
-    for (param in donationObject) {
+    for (param in params) {
       if (params[param] && params[param] === 'MISSING') {
         params['needsAttention'] = true;
+        console.warn(`event ${id} is missing param ${param}`);
       } else if (!params[param]) {
         params[param] = 'MISSING';
         params['needsAttention'] = true;
+        console.warn(`event ${id} is missing param ${param}`);
       }
     }
-    logDonation.writeDonation(donationObject);
+    logDonation.writeDonation(params);
   } catch (err) {
     console.error(`error handling payment intent with id ${id}: ${err}`);
   }

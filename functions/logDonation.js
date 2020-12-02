@@ -90,6 +90,7 @@ exports.writeDonation = function(params) {
       campaignID: params.campaignID,
       learnerCount: 0,
       sourceDonor: donorID,
+      stripeEventId: params.stripeEventId,
       amount: params.amount,
       costPerLearner: costPerLearner,
       frequency: params.frequency,
