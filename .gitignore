@@ -6,3 +6,4 @@ firestore-debug.log
 .idea/
 .DS_Store
 test_database/
+*.log

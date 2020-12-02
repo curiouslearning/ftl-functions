@@ -23,6 +23,10 @@ const updateDonation = require('./updateDonationLearnerCount');
 exports.updateDonationLearnerCount = updateDonation.updateDonationLearnerCount;
 const onDonation = require('./onDonationIncrease');
 exports.onDonationIncrease = onDonation.onDonationIncrease;
+const forceRegion = require('./forceRegionRecalculation');
+exports.forceRegionRecalculation = forceRegion.forceRegionRecalculation;
+const stripeHooks = require('./logStripeEvent');
+exports.logPaymentIntent= stripeHooks.logPaymentIntent;
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
