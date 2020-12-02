@@ -40,7 +40,7 @@ describe('/functions/logStripeEvent', () => {
         data: {
           object: {
             amount: 2076,
-            description: 'Give Lively/ Smart Donations',
+            description: 'Give Lively / Smart Donations',
             metadata: {},
           },
         },
@@ -78,7 +78,7 @@ describe('/functions/logStripeEvent', () => {
     beforeEach(() => {
       intent = {
         amount: 2076,
-        description: 'Give Lively/ Smart Donations',
+        description: 'Give Lively / Smart Donations',
         metadata: {
           utm_source: 'fake-campaign|fake-country|fake-referral',
           user_email: 'fake@email.biz',

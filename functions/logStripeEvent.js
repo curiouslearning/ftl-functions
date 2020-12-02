@@ -24,7 +24,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
-      if (paymentIntent.description === 'Give Lively/ Smart Donations') {
+      if (paymentIntent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${paymentIntent.amount}`);
         this.handlePaymentIntentSucceeded(paymentIntent, event.id);
       }
