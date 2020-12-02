@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-const config = require('../config/functionConfig')
+const config = require('./config/functionConfig')
 const helpers = require('./helpers/firebaseHelpers');
 const { BatchManager } = require('./batchManager');
 

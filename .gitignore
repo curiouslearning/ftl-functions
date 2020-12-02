@@ -1,5 +1,8 @@
 node_modules/
 keys/
 firebase-debug.log
+firestore-debug.log
+*.log
 .idea/
 .DS_Store
+test_database/

@@ -197,6 +197,16 @@ describe('functions/logDonation', async () => {
       await myFunction.writeDonation(params);
       console.error.should.have.been.calledWith('No email was provided to identify or create a user!');
     });
+    it('should throw an error on a missing costPerLearner', async () => {
+      helpers.costPerLearner = sandbox.stub().resolves(undefined);
+      sandbox.spy(myFunction, 'writeDonation');
+      try {
+        await myFunction.writeDonation(params);
+      } catch (e) {
+        e.message.should.equal('received undefined cost per learner');
+      }
+      myFunction.writeDonation.should.have.thrown;
+    });
     it('should call sendNewLearnersEmail with the correct params', async () => {
       await myFunction.writeDonation(params);
       myFunction.generateNewLearnersEmail.should.have.been.calledWith(
