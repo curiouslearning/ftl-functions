@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const cors = require('cors')({origin: true});
-const mailConfig = require('../keys/nodemailerConfig.json');
+const mailConfig = require('./keys/nodemailerConfig.json');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const batchManager = require('./batchManager');
 const addCountryToSummary = require('./addCountryToSummary');
@@ -23,6 +23,10 @@ const updateDonation = require('./updateDonationLearnerCount');
 exports.updateDonationLearnerCount = updateDonation.updateDonationLearnerCount;
 const onDonation = require('./onDonationIncrease');
 exports.onDonationIncrease = onDonation.onDonationIncrease;
+const forceRegion = require('./forceRegionRecalculation');
+exports.forceRegionRecalculation = forceRegion.forceRegionRecalculation;
+const stripeHooks = require('./logStripeEvent');
+exports.logPaymentIntent= stripeHooks.logPaymentIntent;
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }

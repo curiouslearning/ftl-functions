@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const cors = require('cors')({origin: true});
-const mailConfig = require('../keys/nodemailerConfig.json');
+const mailConfig = require('./keys/nodemailerConfig.json');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const BatchManager = require('./batchManager').BatchManager;
 const helpers = require('./helpers/firebaseHelpers');
@@ -12,7 +12,7 @@ if (admin.apps.length === 0) {
 }
 const gmaps = new Client({});
 
-const DEFAULTCPL = 0.25;
+const DEFAULTCPL = 1.0;
 exports.logDonation = functions.https.onRequest(async (req, res) =>{
   if (!req.body) {
     res.status(501).send('no data supplied!');
@@ -37,7 +37,6 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
   }
   const params = {
     firstName: req.body.firstName,
-    lastName: req.body.lastName,
     email: req.body.email,
     timestamp: admin.firestore.Firestore.Timestamp.now(),
     amount: amount,
@@ -83,11 +82,15 @@ exports.writeDonation = function(params) {
     }
     return helpers.getCostPerLearner(params.campaignID);
   }).then((costPerLearner)=>{
+    if (!costPerLearner) {
+      throw new Error('received undefined cost per learner');
+    }
     const docRef = dbRef.doc(donorID);
     const data = {
       campaignID: params.campaignID,
       learnerCount: 0,
       sourceDonor: donorID,
+      stripeEventId: params.stripeEventId,
       amount: params.amount,
       costPerLearner: costPerLearner,
       frequency: params.frequency,
@@ -142,7 +145,6 @@ exports.createDonor = function(params) {
     const uid = user.uid;
     const data = {
       firstName: params.firstName,
-      lastName: params.lastName,
       email: params.email,
       dateCreated: params.timestamp,
       donorID: uid,
@@ -163,7 +165,7 @@ exports.generateNewLearnersEmail = function(name, email, url) {
   const formattedName = capitalized + name.slice(1);
 
   const mailOptions = {
-    from: 'notifications@curiouslearning.org',
+    from: 'followthelearners@curiouslearning.org',
     to: email,
     subject: 'Follow The Learners -- Your Learners are Ready!',
     text: 'Hi '+formattedName+', thank you for helping support Follow the Learners! Click the link below, navigate to the "Your Learners" section, and enter your email to view how we\'re using your donation to bring reading into the lives of children!\n\n'+url+'\n\nFollow the Learners is currently in beta, and we\'re still ironing out some of the wrinkles! If you don\'t see your learners appear after about 5 minutes, please contact support@curiouslearning.org and we will be happy to assist you. ',
