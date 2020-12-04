@@ -19,13 +19,10 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
     return;
   }
 
-  const splitString = req.body.campaignID.split('|');
-  if (splitString.length < 3) {
-    return res.status(400).send(`Missing required fields in campaignID: <country>|<campaign>|<referralSource>`);
-  }
+  const splitString = (req.body.campaignID||'').split('|');
 
-  let country = splitString[0] || 'MISSING'
-  let campaign = splitString[1] || 'MISSING'
+  let campaign = splitString[0] || 'MISSING'
+  let country = splitString[1] || 'MISSING'
   let referralSource = splitString[2] || 'MISSING'
 
   let amount = Number(req.body.amount);
@@ -35,7 +32,6 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
   const params = {
     firstName: req.body.firstName,
     email: req.body.email,
-    timestamp: admin.firestore.Firestore.Timestamp.now(),
     amount: amount,
     frequency: req.body.frequency,
     campaignID: campaign,
@@ -67,6 +63,7 @@ exports.writeDonation = function(params) {
   }
   return helpers.getDonorID(params.email).then((foundID)=>{
     if (foundID === '') {
+      console.log('creating new donor: ', params.email);
       return this.createDonor(params);
     } else {
       return foundID;
@@ -80,7 +77,8 @@ exports.writeDonation = function(params) {
     return helpers.getCostPerLearner(params.campaignID);
   }).then((costPerLearner)=>{
     if (!costPerLearner) {
-      throw new Error('received undefined cost per learner');
+      console.warn('received undefined cost per learner, using default');
+      costPerLearner = DEFAULTCPL;
     }
     const docRef = dbRef.doc(donorID);
     const data = {
@@ -92,7 +90,7 @@ exports.writeDonation = function(params) {
       costPerLearner: costPerLearner,
       frequency: params.frequency,
       countries: [],
-      startDate: params.timestamp,
+      startDate: admin.firestore.Firestore.Timestamp.now(),
       country: params.country,
     };
     if (params.needsAttention) {
@@ -143,7 +141,7 @@ exports.createDonor = function(params) {
     const data = {
       firstName: params.firstName,
       email: params.email,
-      dateCreated: params.timestamp,
+      dateCreated: admin.firestore.Firestore.Timestamp.now(),
       donorID: uid,
     };
     if (params.needsAttention) {

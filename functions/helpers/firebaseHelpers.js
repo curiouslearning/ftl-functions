@@ -28,7 +28,10 @@ const updateCountForCampaign = (campaignID) => {
   let dbRef = admin.firestore().collection('campaigns');
   return dbRef.where('campaignID', '==', campaignID).get().then((snap)=>{
     if (snap.empty) {
-      throw new Error('could not find campaign with id: ', campaignID);
+      console.warn('could not find campaign with id: ', campaignID);
+      return new Promise((res) => {
+        res('resolved');
+      });
     }
     const doc = snap.docs[0];
     let count = doc.data().learnerCount + 1;

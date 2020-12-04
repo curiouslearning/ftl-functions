@@ -67,7 +67,6 @@ describe('functions/logDonation', async () => {
       writeStub.should.have.been.calledWith({
         firstName: 'fake-firstName',
         email: 'fake@email.biz',
-        timestamp: stubTime,
         amount: 5,
         frequency: 'one-time',
         campaignID: 'fake-campaign',
@@ -91,7 +90,6 @@ describe('functions/logDonation', async () => {
       writeStub.should.have.been.calledWith(sinon.match({
         firstName: 'fake-firstName',
         email: 'fake@email.biz',
-        timestamp: stubTime,
         amount: 'MISSING',
         frequency: 'one-time',
         campaignID: 'MISSING',
