@@ -62,7 +62,7 @@ describe('/functions/logStripeEvent', () => {
     it('should return 501', async () => {
       _event = null;
       await run();
-      status.should.have.been.calledWith(501);
+      status.should.have.been.calledWith(400);
     });
     it('should send the data object to the handler', async () => {
       await run();

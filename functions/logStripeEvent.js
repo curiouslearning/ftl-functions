@@ -8,17 +8,9 @@ if (admin.apps.length === 0) {
 const DEFAULTCPL = 1.0;
 
 exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
+  const event = req.body;
   if (!req.body) {
-    res.status(501).send('no data supplied!');
-    return;
-  }
-  let event;
-  try {
-    event = req.body;
-  } catch (err) {
-    console.log(`encountered error while parsing request: ${err}`);
-    res.status(501).send({msg: 'bad data supplied', data: req.body});
-    return;
+    return res.status(400).send('no data supplied!');
   }
   console.log(`parsing event with id ${event.id}`);
   switch (event.type) {
@@ -29,12 +21,8 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
         this.handlePaymentIntentSucceeded(paymentIntent, event.id);
       }
       break;
-    default:
-      // ignore other events
-      break;
   }
-  res.status(200).send({msg: 'sucessfully received event', data: event});
-  return;
+  return res.status(200).send({msg: 'sucessfully received event', data: event});
 });
 
 exports.handlePaymentIntentSucceeded = async (intent, id) => {
@@ -47,20 +35,10 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
       coveredByDonor = Number(coveredByDonor.replace('$', ''));
       amount = amount - coveredByDonor;
     }
-    let splitString;
-    let campaignID;
-    let country;
-    let referralSource;
-    try {
-      splitString = metadata.utm_source.split('|');
-      campaignID = splitString[0] || 'MISSING';
-      country = splitString[1] || 'MISSING';
-      referralSource = splitString[2] || 'MISSING';
-    } catch (e) {
-      campaignID = 'MISSING';
-      country = 'MISSING';
-      referralSource = 'MISSING';
-    }
+    const splitString = (metadata.utm_source||'').split('|');
+    const campaignID = splitString[0] || 'MISSING';
+    const country = splitString[1] || 'MISSING';
+    const referralSource = splitString[2] || 'MISSING';
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
     const params = {
