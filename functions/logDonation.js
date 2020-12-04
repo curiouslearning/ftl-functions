@@ -18,19 +18,16 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
     res.status(501).send('no data supplied!');
     return;
   }
-  let country= 'MISSING';
-  let campaign = 'MISSING';
-  let referralSource = 'MISSING';
+
   const splitString = req.body.campaignID.split('|');
-  if (splitString.length >= 3) {
-    if (splitString[0]) {
-      campaign = splitString[0];
-    } if (splitString[1]) {
-      country = splitString[1];
-    } if (splitString[2]) {
-      referralSource = splitString[2];
-    }
+  if (splitString.length < 3) {
+    return res.status(400).send(`Missing required fields in campaignID: <country>|<campaign>|<referralSource>`);
   }
+
+  let country = splitString[0] || 'MISSING'
+  let campaign = splitString[1] || 'MISSING'
+  let referralSource = splitString[2] || 'MISSING'
+
   let amount = Number(req.body.amount);
   if (req.body.coveredByDonor) {
     amount = amount - Number(req.body.coveredByDonor);
