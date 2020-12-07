@@ -1,9 +1,9 @@
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
-const mailConfig = require('./keys/nodeMailerConfig');
+const mailConfig = require('../keys/nodeMailerConfig.json');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
-const emailOptions = require('./config/email-options');
+const emailOptions = require('../config/email-options.json');
 const DEFAULTCPL = 1;
 
 if (admin.apps.length === 0) {
@@ -206,7 +206,6 @@ const updateMasterLearnerCount = (country) => {
 const sendEmail = async (uid, emailType) => {
   const usrRef = admin.firestore().collection('donor_master').doc(uid);
   const emailConfig = emailOptions[emailType];
-  const email = data.email;
   let url = 'https://followthelearners.curiouslearning.org/campaigns';
   if (emailConfig.utm_source) {
     url = url.concat(emailConfig.utm_source);
@@ -219,6 +218,7 @@ const sendEmail = async (uid, emailType) => {
   return usrRef.get().then((doc)=>{
     const data = doc.data();
     const firstName = data.firstName;
+    const email = data.email;
     const capitalized = firstName.charAt(0).toUpperCase();
     const formattedName = capitalized + firstName.slice(1);
     return admin.auth().generateSignInWithEmailLink(email, actionCodeSettings)
