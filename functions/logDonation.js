@@ -101,34 +101,13 @@ exports.writeDonation = function(params) {
       doc.update({donationID: donationID});
       return assignLearners.assign(donorID, donationID, params.country);
     }).then(()=>{
-      return this.sendNewLearnersEmail(params.firstName, params.email);
+      return helpers.sendEmail(params.sourceDonor, 'donationStart');
     }).catch((err)=>{
       console.error(err);
     });
   }).catch((err) =>{
     console.error(err);
   });
-};
-
-exports.sendNewLearnersEmail = function(displayName, email) {
-  if (!email || email === '') {
-    console.error('cannot send email without an address!');
-  }
-  const actionCodeSettings = {
-    url: 'https://followthelearners.curiouslearning.org/campaigns',
-    handleCodeInApp: true,
-  };
-  return admin.auth()
-      .generateSignInWithEmailLink(email, actionCodeSettings)
-      .then((link)=>{
-        return this.generateNewLearnersEmail(
-            displayName,
-            email,
-            link,
-        );
-      }).catch((err)=>{
-        console.error(err);
-      });
 };
 
 exports.createDonor = function(params) {
@@ -151,26 +130,5 @@ exports.createDonor = function(params) {
     return uid;
   }).catch((err) => {
     console.error(err);
-  });
-};
-
-exports.generateNewLearnersEmail = function(name, email, url) {
-  const transporter = nodemailer.createTransport(mailConfig);
-  const capitalized = name.charAt(0).toUpperCase();
-  const formattedName = capitalized + name.slice(1);
-
-  const mailOptions = {
-    from: 'followthelearners@curiouslearning.org',
-    to: email,
-    subject: 'Follow The Learners -- Your Learners are Ready!',
-    text: 'Hi '+formattedName+', thank you for helping support Follow the Learners! Click the link below, navigate to the "Your Learners" section, and enter your email to view how we\'re using your donation to bring reading into the lives of children!\n\n'+url+'\n\nFollow the Learners is currently in beta, and we\'re still ironing out some of the wrinkles! If you don\'t see your learners appear after about 5 minutes, please contact support@curiouslearning.org and we will be happy to assist you. ',
-  };
-  return transporter.sendMail(mailOptions, (error, info)=>{
-    if (error) {
-      console.error(error);
-    } else {
-      console.log('email sent: ' + info.response);
-      return;
-    }
   });
 };
