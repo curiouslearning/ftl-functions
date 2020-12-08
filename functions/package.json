@@ -11,7 +11,7 @@
     "test": "mocha --recursive"
   },
   "engines": {
-    "node": "10"
+    "node": "12"
   },
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.1.13",

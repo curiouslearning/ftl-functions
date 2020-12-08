@@ -54,7 +54,7 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
   } catch (err) {
     const msg = {err: err};
     console.error(`encountered an error handling payment: ${err}`);
-    return res.status(501).send({msg: msg, event: req.body})
+    return res.status(500).send({msg: msg, event: req.body})
   }
   });
 

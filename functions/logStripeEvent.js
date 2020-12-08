@@ -47,7 +47,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
       break;
   }
   if (msg.data.err) { // check to see if the data were successfully parsed
-    res.status(501);
+    res.status(500);
   } else {
     res.status(200);
   }
