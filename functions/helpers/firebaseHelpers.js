@@ -142,6 +142,42 @@ const getCostPerLearner = (campaignID) => {
       });
 };
 
+const getOrCreateDonor = (email) => {
+  return helpers.getDonorID(email).then((foundID)=>{
+    if (foundID === '') {
+      console.log('creating new donor: ', email);
+      return this.createDonor(params);
+    } else {
+      return foundID;
+    }
+  }).catch((err)=>{
+    console.error(err);
+  });
+};
+
+const createDonor = function(params) {
+  const dbRef = admin.firestore().collection('donor_master');
+  return admin.auth().createUser({
+    displayName: params.firstName,
+    email: params.email,
+  }).then((user)=>{
+    const uid = user.uid;
+    const data = {
+      firstName: params.firstName,
+      email: params.email,
+      dateCreated: admin.firestore.Firestore.Timestamp.now(),
+      donorID: uid,
+    };
+    if (params.needsAttention) {
+      data['needsAttention'] = true;
+    }
+    dbRef.doc(uid).set(data);
+    return uid;
+  }).catch((err) => {
+    console.error(err);
+  });
+};
+
 const getDonorID = (email) => {
   return admin.auth().getUserByEmail(email)
       .then((user)=>{
