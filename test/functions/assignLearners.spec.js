@@ -17,6 +17,7 @@ afterEach(()=>{
 describe('functions/helpers/assignLearners', async () => {
   const myFunction = require('../../functions/helpers/assignLearners');
   const helpers = require('../../functions/helpers/firebaseHelpers');
+  const {BatchManager} = require('../../functions/batchManager');
   const firestore = admin.firestore.Firestore;
   describe('/assign', () => {
     beforeEach(() => {
@@ -95,7 +96,6 @@ describe('functions/helpers/assignLearners', async () => {
       };
       allStub = sandbox.stub(Promise, 'all').resolves([
         donationRef,
-        poolRef,
         campaignRef,
       ]);
       batchStub = sandbox.stub(myFunction, 'batchWriteLearners').resolves();
@@ -198,7 +198,6 @@ describe('functions/helpers/assignLearners', async () => {
   });
 
   describe('/batchWriteLearners', async () => {
-    const { BatchManager } = require('../../functions/batchManager');
     let donation;
     let snapshot;
     let learnerCount;
@@ -208,7 +207,9 @@ describe('functions/helpers/assignLearners', async () => {
     let timeStub;
     let queueStub;
     let expected;
+    let aggStub;
     beforeEach(() => {
+      aggStub = sandbox.stub(myFunction, 'addLearnersToDonationSummary');
       stubTime = firestore.Timestamp.now();
       timeStub = sandbox.stub(firestore.Timestamp, 'now').returns(stubTime);
       learnerCount = 2;
@@ -273,6 +274,103 @@ describe('functions/helpers/assignLearners', async () => {
       await myFunction.batchWriteLearners(snapshot, donation, learnerCount);
       BatchManager.prototype.set.should.have.been.calledThrice;
       BatchManager.prototype.set.should.always.have.been.calledWith(sinon.match.any, expected, true);
-    })
+    });
+  });
+
+  describe('/addLearnersToDonationSummary', () => {
+    let learners;
+    let donation;
+    let batch;
+    let setStub;
+    let expected;
+    beforeEach(() => {
+      learners = [
+        {country: 'fake-country1', region: 'fake-c1-r1'},
+        {country: 'fake-country1', region: 'fake-c1-r2'},
+        {country: 'fake-country1', region: 'fake-c1-r3'},
+        {country: 'fake-country2', region: 'fake-c2-r1'},
+        {country: 'fake-country2', region: 'fake-c2-r2'},
+        {country: 'fake-country2', region: 'fake-c2-r3'},
+        {country: 'fake-country3', region: 'fake-c3-r1'},
+        {country: 'fake-country3', region: 'fake-c3-r2'},
+        {country: 'fake-country3', region: 'fake-c3-r3'},
+      ];
+      expected = {
+        learnerCount: 9,
+        countries: [
+          {
+            country: 'fake-country1',
+            learnerCount: 3,
+            regions: [
+              {
+                region: 'fake-c1-r1',
+                learnerCount: 1,
+              }, {
+                region: 'fake-c1-r2',
+                learnerCount: 1,
+              }, {
+                region: 'fake-c1-r3',
+                learnerCount: 1,
+              },
+            ],
+          }, {
+            country: 'fake-country2',
+            learnerCount: 3,
+            regions: [
+              {
+                region: 'fake-c2-r1',
+                learnerCount: 1,
+              }, {
+                region: 'fake-c2-r2',
+                learnerCount: 1,
+              }, {
+                region: 'fake-c2-r3',
+                learnerCount: 1,
+              },
+            ],
+          }, {
+            country: 'fake-country3',
+            learnerCount: 3,
+            regions: [
+              {
+                region: 'fake-c3-r1',
+                learnerCount: 1,
+              }, {
+                region: 'fake-c3-r2',
+                learnerCount: 1,
+              }, {
+                region: 'fake-c3-r3',
+                learnerCount: 1,
+              },
+            ],
+          },
+        ],
+      };
+      donation = 'fake-donation';
+      batch = new BatchManager();
+      setStub = sandbox.stub(batch, 'set').resolves();
+    });
+    afterEach(() => {
+      sandbox.restore();
+    });
+    it('should log and aggregate 9 new users', async () => {
+      await myFunction.addLearnersToDonationSummary(learners, donation, batch);
+      setStub.should.have.been.calledWith(donation, expected, true);
+    });
+    it('should log an error on missing input', async () => {
+      sandbox.spy(console, 'error');
+      learners = [];
+      expected = 'no learners provided!';
+      await myFunction.addLearnersToDonationSummary(learners, donation, batch);
+      console.error.should.have.been.calledWith(expected);
+    });
+    it('should skip over learners that have no data', async () => {
+      learners[3] = null;
+      expected.learnerCount = 8;
+      expected.countries[1].learnerCount = 2;
+      expected.countries[1].regions = expected.countries[1].regions.slice(1, 3);
+      await myFunction.addLearnersToDonationSummary(learners, donation, batch);
+      setStub.should.have.been.calledWith(donation, expected, true);
+    });
   });
 });

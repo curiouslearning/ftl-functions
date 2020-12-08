@@ -96,6 +96,7 @@ describe('/functions/logStripeEvent', () => {
         campaignID: 'fake-campaign',
         country: 'fake-country',
         referralSource: 'fake-referral',
+        frequency: 'one-time',
       };
       writeStub = sandbox.stub(logDonation, 'writeDonation').resolves();
     });
@@ -125,6 +126,7 @@ describe('/functions/logStripeEvent', () => {
         country: 'MISSING',
         referralSource: 'MISSING',
         needsAttention: true,
+        frequency: 'one-time',
       };
       await myFunction.handlePaymentIntentSucceeded(intent, id);
       writeStub.should.have.been.calledWith(expected);

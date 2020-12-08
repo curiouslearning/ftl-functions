@@ -7,6 +7,27 @@ if (admin.apps.length === 0) {
 
 const DEFAULTCPL = 1.0;
 
+exports.testPaymentIntent = functions.https.onRequest(async (req, res) => {
+  const event = {
+    id: 'fake-event-id',
+    data: {
+      object: {
+        description: 'Give Lively / Smart Donations',
+        amount: 2076,
+        metadata: {
+          transaction_fee_covered_by_donor: '$0.76',
+          user_email: 'fake@email.biz',
+          user_first_name: 'fakeName',
+          utm_source: 'Africa|Africa|fakeReferral',
+        },
+      },
+    },
+  };
+  console.log('testing donation pathway');
+  this.handlePaymentIntentSucceeded(event.data.object, event.id);
+  return res.status(200).send();
+});
+
 exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   const event = req.body;
   if (!req.body) {
@@ -50,7 +71,11 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
       campaignID: campaignID,
       country: country,
       referralSource: referralSource,
+      frequency: 'one-time',
     };
+    console.log('campaign is', params.campaignID);
+    console.log('country is', params.country);
+    console.log('referral is', params.referralSource);
     for (param in params) {
       if (params[param] && params[param] === 'MISSING') {
         params['needsAttention'] = true;
@@ -61,7 +86,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
         console.warn(`event ${id} is missing param ${param}`);
       }
     }
-    logDonation.writeDonation(params);
+    return logDonation.writeDonation(params);
   } catch (err) {
     console.error(`error handling payment intent with id ${id}: ${err}`);
   }

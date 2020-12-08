@@ -27,6 +27,7 @@ const forceRegion = require('./forceRegionRecalculation');
 exports.forceRegionRecalculation = forceRegion.forceRegionRecalculation;
 const stripeHooks = require('./logStripeEvent');
 exports.logPaymentIntent= stripeHooks.logPaymentIntent;
+exports.testPaymentIntent= stripeHooks.testPaymentIntent;
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
