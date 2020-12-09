@@ -77,7 +77,6 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
     const referralSource = splitString[2] || 'MISSING';
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
-    const uid = await helpers.getOrCreateDonor(email);
     const params = {
       stripeEventId: id,
       firstName: firstName,
@@ -86,7 +85,6 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
       coveredByDonor: coveredByDonor,
       campaignID: campaignID,
       country: country,
-      sourceDonor: uid,
       referralSource: referralSource,
       frequency: 'one-time',
     };
@@ -104,6 +102,8 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
         console.warn(`event ${id} is missing param ${param}`);
       }
     }
+    const uid = await helpers.getOrCreateDonor(params);
+    params['sourceDonor'] = uid;
     logDonation.writeDonation(params); // kick off the asynchronous write
     return {msg: 'successfully handled intent', data: {uid: uid}};
   } catch (err) {
