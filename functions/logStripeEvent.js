@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const logDonation = require('./logDonation');
+const helpers = require('./helpers/firebaseHelpers');
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -11,6 +12,7 @@ const DEFAULTCPL = 1.0;
 exports.testPaymentIntent = functions.https.onRequest(async (req, res) => {
   const event = {
     id: 'fake-event-id',
+    type: 'payment_intent.succeeded',
     data: {
       object: {
         description: 'Give Lively / Smart Donations',
@@ -25,7 +27,7 @@ exports.testPaymentIntent = functions.https.onRequest(async (req, res) => {
     },
   };
   console.log('testing donation pathway');
-  const msg = this.handlePaymentIntentSucceeded(event.data.object, event.id);
+  const msg = await this.handlePaymentIntentSucceeded(event.data.object, event.id);
   return res.status(200).send({msg: msg, obj: event});
 });
 
@@ -40,13 +42,18 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   switch (event.type) {
     case 'payment_intent.succeeded':
       intent = event.data.object;
-      if (paymentIntent.description === 'Give Lively / Smart Donations') {
+      if (intent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${intent.amount}`);
-        msg = this.handlePaymentIntentSucceeded(intent, event.id);
+        msg = await this.handlePaymentIntentSucceeded(intent, event.id);
       }
       break;
+    default:
+      msg = {msg: 'unsupported intent', data: {}};
+      break;
   }
-  if (msg.data.err) { // check to see if the data were successfully parsed
+  if (msg.msg && msg.msg === 'unsupported intent') {
+    res.status(400);
+  } else if (msg.data.err) {// check to see if the data were successfully parsed
     res.status(500);
   } else {
     res.status(200);
@@ -98,10 +105,11 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
       }
     }
     logDonation.writeDonation(params); // kick off the asynchronous write
-    return {msg: 'successfully handled intent', data: {uid: sourceDonor}};
+    return {msg: 'successfully handled intent', data: {uid: uid}};
   } catch (err) {
     const data = {id: id, err: err};
     console.error(`error handling payment intent with id ${id}: ${err}`);
-    return {msg: 'could not handle payment', data: msg};
+    console.error(err);
+    return {msg: 'could not handle payment', data: data};
   }
 };

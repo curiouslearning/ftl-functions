@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
-const mailConfig = require('../keys/nodeMailerConfig.json');
+const mailConfig = require('../keys/nodemailerConfig.json');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
 const emailOptions = require('../config/email-options.json');
@@ -143,10 +143,10 @@ const getCostPerLearner = (campaignID) => {
 };
 
 const getOrCreateDonor = (email) => {
-  return helpers.getDonorID(email).then((foundID)=>{
+  return getDonorID(email).then((foundID)=>{
     if (foundID === '') {
       console.log('creating new donor: ', email);
-      return this.createDonor(params);
+      return createDonor(params);
     } else {
       return foundID;
     }
@@ -298,6 +298,7 @@ module.exports = {
   updateCountForCampaign,
   updateMasterLearnerCount,
   calculatePercentFilled,
+  getOrCreateDonor,
   findObjWithProperty,
   getDonation,
   getDonorID,
