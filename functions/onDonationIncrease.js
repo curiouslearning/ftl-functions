@@ -12,6 +12,10 @@ exports.onDonationIncrease = functions.firestore
       const after = change.after.data();
       if (before.amount !== after.amount || !after.percentFilled) {
         return this.updatePercentFilled(change.after, context);
+      } else if (before.percentFilled < 100 && after.percentFilled >= 100) {
+        helpers.sendEmail(after.sourceDonor, 'donationCompleted');
+      } else if (before.percentFilled < 50 && after.percentFilled >= 50) {
+        helpers.sendEmail(after.sourceDonor, 'halfwayMark');
       }
       return new Promise((resolve)=>{
         resolve({status: 200, data: 'did not update document'});

@@ -1,6 +1,9 @@
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
+const mailConfig = require('../keys/nodeMailerConfig.json');
 const {Client, Status} = require('@googlemaps/google-maps-services-js');
 const gmaps = new Client({});
+const emailOptions = require('../config/email-options.json');
 const DEFAULTCPL = 1;
 
 if (admin.apps.length === 0) {
@@ -115,6 +118,12 @@ const updateCountForRegion = (country, region) => {
         });
 }
 
+const calculatePercentFilled = (amount, costPerLearner, learnerCount) => {
+  const learnerMax = Math.round(amount/costPerLearner);
+  const decimal = learnerCount/learnerMax;
+  return Math.round(decimal * 100);
+};
+
 const getCostPerLearner = (campaignID) => {
   return admin.firestore().collection('campaigns')
       .where('campaignID', '==', campaignID)
@@ -131,6 +140,42 @@ const getCostPerLearner = (campaignID) => {
       }).catch((err)=>{
         console.error(err);
       });
+};
+
+const getOrCreateDonor = (email) => {
+  return helpers.getDonorID(email).then((foundID)=>{
+    if (foundID === '') {
+      console.log('creating new donor: ', email);
+      return this.createDonor(params);
+    } else {
+      return foundID;
+    }
+  }).catch((err)=>{
+    console.error(err);
+  });
+};
+
+const createDonor = function(params) {
+  const dbRef = admin.firestore().collection('donor_master');
+  return admin.auth().createUser({
+    displayName: params.firstName,
+    email: params.email,
+  }).then((user)=>{
+    const uid = user.uid;
+    const data = {
+      firstName: params.firstName,
+      email: params.email,
+      dateCreated: admin.firestore.Firestore.Timestamp.now(),
+      donorID: uid,
+    };
+    if (params.needsAttention) {
+      data['needsAttention'] = true;
+    }
+    dbRef.doc(uid).set(data);
+    return uid;
+  }).catch((err) => {
+    console.error(err);
+  });
 };
 
 const getDonorID = (email) => {
@@ -188,14 +233,75 @@ const updateMasterLearnerCount = (country) => {
   });
 };
 
+/**
+* Send an automated email of type emailType to the donor specified by uid
+* @param{String} uid the unique identifier of the target donor
+* @param{String} emailType the key for the desired email template
+* @return{Promise} A promise that resolves if the email successfully sends
+*/
+const sendEmail = async (uid, emailType) => {
+  const usrRef = admin.firestore().collection('donor_master').doc(uid);
+  const emailConfig = emailOptions[emailType];
+  let url = 'https://followthelearners.curiouslearning.org/campaigns';
+  if (emailConfig.utm_source) {
+    url = url.concat(emailConfig.utm_source);
+  }
+  const actionCodeSettings = {
+    url: url,
+    handleCodeInApp: true,
+  };
+  const transporter = nodemailer.createTransport(mailConfig);
+  return usrRef.get().then((doc)=>{
+    const data = doc.data();
+    const firstName = data.firstName;
+    const email = data.email;
+    const capitalized = firstName.charAt(0).toUpperCase();
+    const formattedName = capitalized + firstName.slice(1);
+    return admin.auth().generateSignInWithEmailLink(email, actionCodeSettings)
+        .then((link)=>{
+          const textConfigOptions = {
+            url: link,
+            formattedName: formattedName,
+          };
+          emailText = customizeText(emailConfig.text, textConfigOptions);
+          const mailOptions = {
+            from: emailConfig.from,
+            to: email,
+            subject: emailConfig.subject,
+            text: emailText,
+          };
+          return transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+              console.error(error);
+              return;
+            } else {
+              console.log('email sent: ' + info.response);
+              return;
+            }
+          });
+        });
+  });
+};
+
+const customizeText = (text, configOptions) => {
+  for (prop in configOptions) {
+    if (configOptions[prop]) {
+      text = text.replace('${'+prop+'}', configOptions[prop]);
+    }
+  }
+  return text;
+};
 
 module.exports = {
   getPinForAddress,
   updateCountForRegion,
   updateCountForCampaign,
   updateMasterLearnerCount,
+  calculatePercentFilled,
   findObjWithProperty,
   getDonation,
   getDonorID,
   getCostPerLearner,
+  sendEmail,
+  customizeText,
 };
