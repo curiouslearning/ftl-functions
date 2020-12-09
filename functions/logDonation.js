@@ -61,7 +61,6 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
 // TODO: refactor this to have non-essential queries run in an onCreate event
 exports.writeDonation = async function(params) {
   const dbRef = admin.firestore().collection('donor_master');
-  let donorID ='';
   if (!params.email || params.email === 'MISSING') {
     console.error('No email was provided to identify or create a user!');
   }
@@ -71,7 +70,7 @@ exports.writeDonation = async function(params) {
   } else {
     costPerLearner = await helpers.getCostPerLearner(params.campaignID);
   }
-  const docRef = dbRef.doc(donorID);
+  const docRef = dbRef.doc(params.sourceDonor);
   const data = {
     campaignID: params.campaignID,
     learnerCount: 0,
@@ -90,7 +89,7 @@ exports.writeDonation = async function(params) {
   return docRef.collection('donations').add(data).then((doc)=>{
     const donationID = doc.id;
     doc.update({donationID: donationID});
-    return assignLearners.assign(donorID, donationID, params.country);
+    return assignLearners.assign(params.sourceDonor, donationID, params.country);
   }).then(()=>{
     return helpers.sendEmail(params.sourceDonor, 'donationStart');
   }).catch((err)=>{
