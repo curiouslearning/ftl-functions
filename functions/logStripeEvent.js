@@ -12,6 +12,7 @@ const DEFAULTCPL = 1.0;
 exports.testPaymentIntent = functions.https.onRequest(async (req, res) => {
   const event = {
     id: 'fake-event-id',
+    type: 'payment_intent.succeeded',
     data: {
       object: {
         description: 'Give Lively / Smart Donations',
@@ -61,14 +62,20 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   switch (event.type) {
     case 'payment_intent.succeeded':
       intent = event.data.object;
-      if (paymentIntent.description === 'Give Lively / Smart Donations') {
+      if (intent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${intent.amount}`);
         msg = await this.handlePaymentIntentSucceeded(intent, event.id, chargeId, existingDonation);
         console.log(`msg: ${msg}`);
       }
       break;
+    default:
+      msg = {msg: 'unsupported intent', data: {}};
+      break;
   }
-  if (msg.data.err) { // check to see if the data were successfully parsed
+
+  if (msg.msg && msg.msg === 'unsupported intent') {
+    res.status(400);
+  } else if (msg.data.err||{}.err) {// check to see if the data were successfully parsed
     res.status(500);
   } else {
     res.status(200);
@@ -92,7 +99,6 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
     const referralSource = splitString[2] || 'MISSING';
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
-    const uid = existingDonation.sourceDonor || await helpers.getOrCreateDonor(email);
     const params = {
       chargeId,
       stripeEventId: id,
@@ -102,11 +108,9 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
       coveredByDonor: coveredByDonor,
       campaignID: campaignID,
       country: country,
-      sourceDonor: uid,
       referralSource: referralSource,
       frequency: 'one-time',
     };
-    console.log(`user is ${uid}`);
     console.log('campaign is', params.campaignID);
     console.log('country is', params.country);
     console.log('referral is', params.referralSource);
@@ -120,7 +124,10 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
         console.warn(`event ${id} is missing param ${param}`);
       }
     }
-    logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
+    const uid = existingDonation.sourceDonor || await helpers.getOrCreateDonor(params);
+    params['sourceDonor'] = uid;
+    console.log(`user is ${uid}`);
+    logDonation.writeDonation(params); // kick off the asynchronous write
     return {msg: 'successfully handled intent', data: {uid: uid}};
   } catch (err) {
     const data = {id: id, err: err};
