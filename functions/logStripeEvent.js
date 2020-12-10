@@ -106,6 +106,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
     }
     const uid = await helpers.getOrCreateDonor(params);
     params['sourceDonor'] = uid;
+    console.log(`user is ${uid}`);
     logDonation.writeDonation(params); // kick off the asynchronous write
     return {msg: 'successfully handled intent', data: {uid: uid}};
   } catch (err) {
