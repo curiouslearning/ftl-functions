@@ -38,12 +38,20 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   console.log(`parsing event with id ${event.id}`);
   let intent;
   let msg;
+  const chargeIds = event.charges.data||[].map(charge => charge.id);
+
+  //Determine if this is a replay-event
+  const existingDonation = await firestore.collectionGroup('donations').whereEquals('eventId', event.id);
+  if(existingDonation) {
+    console.log(`Replay of existing donation with eventId: ${event.id}`);
+  }
+
   switch (event.type) {
     case 'payment_intent.succeeded':
       intent = event.data.object;
       if (paymentIntent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${intent.amount}`);
-        msg = await this.handlePaymentIntentSucceeded(intent, event.id);
+        msg = await this.handlePaymentIntentSucceeded(intent, event.id, chargeIds, existingDonation);
         console.log(`msg: ${msg}`);
       }
       break;
@@ -56,7 +64,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   return res.send({msg: msg, obj: event});
 });
 
-exports.handlePaymentIntentSucceeded = async (intent, id) => {
+exports.handlePaymentIntentSucceeded = async (intent, id, chargeIds, existingDonation) => {
   let metadata;
   let amount = intent.amount/100; // convert from cents to dollars
   try {
@@ -72,8 +80,9 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
     const referralSource = splitString[2] || 'MISSING';
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
-    const uid = await helpers.getOrCreateDonor(email);
+    const uid = existingDonation.sourceDonor || await helpers.getOrCreateDonor(email);
     const params = {
+      chargeIds,
       stripeEventId: id,
       firstName: firstName,
       email: email,
@@ -99,7 +108,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
         console.warn(`event ${id} is missing param ${param}`);
       }
     }
-    logDonation.writeDonation(params); // kick off the asynchronous write
+    logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
     return {msg: 'successfully handled intent', data: {uid: uid}};
   } catch (err) {
     const data = {id: id, err: err};
