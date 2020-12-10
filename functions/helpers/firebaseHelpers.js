@@ -142,11 +142,11 @@ const getCostPerLearner = (campaignID) => {
       });
 };
 
-const getOrCreateDonor = (email) => {
-  return getDonorID(email).then((foundID)=>{
+const getOrCreateDonor = (params) => {
+  return getDonorID(params.email).then((foundID)=>{
     if (foundID === '') {
-      console.log('creating new donor: ', email);
-      return this.createDonor(params);
+      console.log('creating new donor: ', params.email);
+      return createDonor(params);
     } else {
       return foundID;
     }
