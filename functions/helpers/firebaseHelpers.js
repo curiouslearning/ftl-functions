@@ -145,7 +145,7 @@ const getCostPerLearner = (campaignID) => {
 const getOrCreateDonor = (params) => {
   return getDonorID(params.email).then((foundID)=>{
     if (foundID === '') {
-      console.log('creating new donor: ', email);
+      console.log('creating new donor: ', params.email);
       return createDonor(params);
     } else {
       return foundID;

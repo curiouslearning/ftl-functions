@@ -45,6 +45,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
       if (intent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${intent.amount}`);
         msg = await this.handlePaymentIntentSucceeded(intent, event.id);
+        console.log(`msg: ${msg}`);
       }
       break;
     default:
