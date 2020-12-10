@@ -82,6 +82,7 @@ exports.writeDonation = async function(params) {
     countries: [],
     startDate: admin.firestore.Firestore.Timestamp.now(),
     country: params.country,
+    referralSource: params.referralSource,
   };
   if (params.needsAttention) {
     data['needsAttention'] = true;
