@@ -138,6 +138,7 @@ exports.assignLearnersByContinent= function(donorID, donationID, continent) {
               resolve('resolved');
             });
           }
+          console.log(`found ${snapshot.size} learners to assign.`);
           return this.batchWriteLearners(snapshot, vals[0], cap);
         }).catch((err)=>{
           console.error(err);
@@ -184,7 +185,10 @@ exports.batchWriteLearners = function(snapshot, donation, learnerCount) {
   let batchManager = new BatchManager();
   let learners = [];
   for (let i=0; i < learnerCount; i++) {
-    if (i >= snapshot.size) break;
+    if (i >= snapshot.size) {
+      console.log('not enough learners to continue');
+      break;
+    }
     let learnerID = snapshot.docs[i].id;
     let data = snapshot.docs[i].data();
     if (data === undefined) continue;

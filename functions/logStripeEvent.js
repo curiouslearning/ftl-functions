@@ -90,7 +90,6 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
       referralSource: referralSource,
       frequency: 'one-time',
     };
-    console.log(`user is ${uid}`);
     console.log('campaign is', params.campaignID);
     console.log('country is', params.country);
     console.log('referral is', params.referralSource);

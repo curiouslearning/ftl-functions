@@ -71,22 +71,11 @@ exports.writeDonation = async function(params) {
     costPerLearner = await helpers.getCostPerLearner(params.campaignID);
   }
   const docRef = dbRef.doc(params.sourceDonor);
-  const data = {
-    campaignID: params.campaignID,
-    learnerCount: 0,
-    sourceDonor: params.sourceDonor,
-    stripeEventId: params.stripeEventId,
-    amount: params.amount,
-    costPerLearner: costPerLearner,
-    frequency: params.frequency,
-    countries: [],
-    startDate: admin.firestore.Firestore.Timestamp.now(),
-    country: params.country,
-  };
-  if (params.needsAttention) {
-    data['needsAttention'] = true;
-  }
-  return docRef.collection('donations').add(data).then((doc)=>{
+  params['learnerCount'] = 0;
+  params['costPerLearner'] = costPerLearner;
+  params['countries'] = [];
+  params['startDate'] = admin.firestore.Firestore.Timestamp.now();
+  return docRef.collection('donations').add(params).then((doc)=>{
     const donationID = doc.id;
     doc.update({donationID: donationID});
     return assignLearners.assign(params.sourceDonor, donationID, params.country);
