@@ -38,12 +38,24 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   console.log(`parsing event with id ${event.id}`);
   let intent;
   let msg;
-  const chargeIds = event.charges.data||[].map(charge => charge.id);
+  //There should only be a single charge for every donation
+  const chargeId = ((event.data.object.charges||{}).data||[]).map(charge => charge.id)[0];
 
   //Determine if this is a replay-event
-  const existingDonation = await firestore.collectionGroup('donations').whereEquals('eventId', event.id);
-  if(existingDonation) {
+  let existingDonation;
+  try {
+    existingDonation = await admin.firestore().collectionGroup('donations').where('stripeEventId', '==', event.id).get();
+  } catch(err) {
+    const errorMsg = `Error when trying to pull the existing donation with eventId: ${event.id}`;
+    console.error(errorMsg);
+    //TODO the return line below is only for testing.  Remove before prod release
+    return res.status(500).send(errorMsg);
+  }
+
+  if(!existingDonation.empty) {
     console.log(`Replay of existing donation with eventId: ${event.id}`);
+  } else {
+    existingDonation = null;  //Ensure that the object is null to avoid random properties from the firestore read
   }
 
   switch (event.type) {
@@ -51,7 +63,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
       intent = event.data.object;
       if (paymentIntent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${intent.amount}`);
-        msg = await this.handlePaymentIntentSucceeded(intent, event.id, chargeIds, existingDonation);
+        msg = await this.handlePaymentIntentSucceeded(intent, event.id, chargeId, existingDonation);
         console.log(`msg: ${msg}`);
       }
       break;
@@ -64,7 +76,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   return res.send({msg: msg, obj: event});
 });
 
-exports.handlePaymentIntentSucceeded = async (intent, id, chargeIds, existingDonation) => {
+exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDonation) => {
   let metadata;
   let amount = intent.amount/100; // convert from cents to dollars
   try {
@@ -82,7 +94,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeIds, existingDon
     const firstName = metadata.user_first_name;
     const uid = existingDonation.sourceDonor || await helpers.getOrCreateDonor(email);
     const params = {
-      chargeIds,
+      chargeId,
       stripeEventId: id,
       firstName: firstName,
       email: email,
