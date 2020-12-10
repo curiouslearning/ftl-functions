@@ -52,9 +52,10 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
       msg = {msg: 'unsupported intent', data: {}};
       break;
   }
+
   if (msg.msg && msg.msg === 'unsupported intent') {
     res.status(400);
-  } else if (msg.data.err) {// check to see if the data were successfully parsed
+  } else if (msg.data.err||{}.err) {// check to see if the data were successfully parsed
     res.status(500);
   } else {
     res.status(200);
