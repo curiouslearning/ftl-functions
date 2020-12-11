@@ -70,30 +70,11 @@ exports.writeDonation = async function(params, existingDonation) {
   }
 
   const docRef = dbRef.doc(params.sourceDonor);
-  const data = {
-    chargeIds: params.chargeIds,
-    campaignID: params.campaignID,
-    learnerCount: 0,
-    sourceDonor: params.sourceDonor,
-    stripeEventId: params.stripeEventId,
-    amount: params.amount,
-    costPerLearner: costPerLearner,
-    frequency: params.frequency,
-    countries: [],
-    startDate: existingDonation.startDate || admin.firestore.Firestore.Timestamp.now(),
-    country: params.country,
-  };
-  if (params.needsAttention) {
-    data['needsAttention'] = true;
-  }
-
-  //If the donation already exists, only persist the updated document without assigning learners or sending an email
-  if(existingDonation) {
-    await docRef.collection('donations').doc(existingDonation.donationID).update(data);
-    return {id: existingDonation.donationID, data};
-  }
-
-  return docRef.collection('donations').add(data).then((doc)=>{
+  params['learnerCount'] = 0;
+  params['costPerLearner'] = costPerLearner;
+  params['countries'] = [];
+  params['startDate'] = admin.firestore.Firestore.Timestamp.now();
+  return docRef.collection('donations').add(params).then((doc)=>{
     const donationID = doc.id;
     doc.update({donationID: donationID});
     return assignLearners.assign(params.sourceDonor, donationID, params.country);
