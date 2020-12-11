@@ -51,7 +51,6 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   } catch(err) {
     const errorMsg = `Error when trying to pull the existing donation with eventId: ${event.id}`;
     console.error(errorMsg);
-    //TODO the return line below is only for testing.  Remove before prod release
     return res.status(500).send(errorMsg);
   }
 
@@ -127,7 +126,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
         console.warn(`event ${id} is missing param ${param}`);
       }
     }
-    const uid = existingDonation.sourceDonor || await helpers.getOrCreateDonor(params);
+    const uid = get(existingDonation, 'sourceDonor', await helpers.getOrCreateDonor(params));
     params['sourceDonor'] = uid;
     console.log(`user is ${uid}`);
     await logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
