@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const logDonation = require('./logDonation');
 const helpers = require('./helpers/firebaseHelpers');
+const {get} = require('lodash');
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -39,8 +40,9 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   console.log(`parsing event with id ${event.id}`);
   let intent;
   let msg;
+
   //There should only be a single charge for every donation
-  const chargeId = ((event.data.object.charges||{}).data||[]).map(charge => charge.id)[0];
+  const chargeId = get(event, 'data.object.charges.data', []).map(charge => charge.id)[0];
 
   //Determine if this is a replay-event
   let existingDonation;
@@ -55,8 +57,9 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
 
   if(!existingDonation.empty) {
     console.log(`Replay of existing donation with eventId: ${event.id}`);
+    existingDonation = existingDonation.docs[0].data();  //Always take the first record
   } else {
-    existingDonation = null;  //Ensure that the object is null to avoid random properties from the firestore read
+    existingDonation = {};  //Ensure that the object is empty to avoid random properties from the firestore read
   }
 
   switch (event.type) {
@@ -127,7 +130,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
     const uid = existingDonation.sourceDonor || await helpers.getOrCreateDonor(params);
     params['sourceDonor'] = uid;
     console.log(`user is ${uid}`);
-    logDonation.writeDonation(params); // kick off the asynchronous write
+    await logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
     return {msg: 'successfully handled intent', data: {uid: uid}};
   } catch (err) {
     const data = {id: id, err: err};
