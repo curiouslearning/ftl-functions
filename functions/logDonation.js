@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 const helpers = require('./helpers/firebaseHelpers');
-const assignLearners = require('./helpers/assignLearners');
 const {isEmpty, get} = require('lodash');
 
 if (admin.apps.length === 0) {
@@ -13,9 +12,7 @@ const DEFAULTCPL = 1.0;
 exports.writeDonation = async function(params, existingDonation) {
   if(!existingDonation) existingDonation = {};
   const dbRef = admin.firestore().collection('donor_master');
-  if (!params.email || params.email === 'MISSING') {
-    console.error('No email was provided to identify or create a user!');
-  }
+
   let costPerLearner = get(existingDonation, 'costPerLearner',
       params.country === 'any' ? DEFAULTCPL : await helpers.getCostPerLearner(params.campaignID));
 
@@ -28,21 +25,23 @@ exports.writeDonation = async function(params, existingDonation) {
   //If the donation already exists, only persist the updated document without assigning learners or sending an email
   if(!isEmpty(existingDonation)) {
     try {
+      if(!existingDonation.donationID) {
+        console.error(`The existing donation with eventID: ${existingDonation.stripeEventId} does not have a donation ID.  Aborting`);
+        throw new Error('Unable to persist donation due to lack of donation ID');
+      }
       params.donationID = existingDonation.donationID;
       await docRef.collection('donations').doc(existingDonation.donationID).update(params);
     } catch(err) {
       console.error(`Error when trying to update the existing donation object with donationId: ${existingDonation.donationID}`);
       throw err;
     }
-    return {id: existingDonation.donationID, params};
+    return {sourceDonor: params.sourceDonor, donationId: existingDonation.donationID, country: params.country};
   }
 
   return docRef.collection('donations').add(params).then((doc)=>{
     const donationID = doc.id;
     doc.update({donationID: donationID});
-    return assignLearners.assign(params.sourceDonor, donationID, params.country);
-  }).then(()=>{
-    return helpers.sendEmail(params.sourceDonor, 'donationStart');
+    return {sourceDonor: params.sourceDonor, donationID, country: params.country};
   }).catch((err)=>{
     console.error(err);
   });

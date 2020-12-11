@@ -2,7 +2,9 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const logDonation = require('./logDonation');
 const helpers = require('./helpers/firebaseHelpers');
-const {get} = require('lodash');
+const {get, isEmpty} = require('lodash');
+const assignLearners = require('./helpers/assignLearners');
+
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -129,12 +131,25 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
     const uid = get(existingDonation, 'sourceDonor', await helpers.getOrCreateDonor(params));
     params['sourceDonor'] = uid;
     console.log(`user is ${uid}`);
-    await logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
-    return {msg: 'successfully handled intent', data: {uid: uid}};
+
+    const donationResults = await logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
+
+    if(isEmpty(existingDonation)) {  //Only assign learners if there's not an existing donation
+      await assignLearners.assign(donationResults.sourceDonor, donationResults.donationID, donationResults.country);
+    }
+
+    if (!params.email || params.email === 'MISSING') {
+      console.error('No email was provided to identify or create a user!');
+    } else {
+      helpers.sendEmail(params.sourceDonor, 'donationStart');
+    }
+    let msg = `Successfully handled intent.  ${!isEmpty(existingDonation) ? 
+        `Duplicate payment found.  Replaying event: ${existingDonation.stripeEventId}` : ''}`
+    return {msg, data: {uid: uid}};
   } catch (err) {
     const data = {id: id, err: err};
     console.error(`error handling payment intent with id ${id}: ${err}`);
     console.error(err);
-    return {msg: 'could not handle payment', data: data};
+    return {msg: 'could not handle payment', data: data, err};
   }
 };
