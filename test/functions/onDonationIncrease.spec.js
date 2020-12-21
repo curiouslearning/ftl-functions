@@ -34,6 +34,7 @@ describe('functions/onDonationIncrease', async () => {
           campaignID: 'fake-campaign',
           sourceDonor: 'fake-donor',
           learnerCount: 20,
+          costPerLearner: 0.25,
           endDate: admin.firestore.Firestore.Timestamp.now(),
         };
       },
@@ -47,6 +48,7 @@ describe('functions/onDonationIncrease', async () => {
           campaignID: 'fake-campaign',
           sourceDonor: 'fake-donor',
           learnerCount: 20,
+          costPerLearner: 0.25,
           endDate: admin.firestore.Firestore.Timestamp.now(),
         };
       },
@@ -104,6 +106,8 @@ describe('functions/onDonationIncrease', async () => {
         return {
           amount: 5,
           percentFilled: 100,
+          costPerLearner: 0.25,
+          learnerCount: 20,
         };
       },
     };

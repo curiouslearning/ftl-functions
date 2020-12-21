@@ -48,7 +48,7 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
     }
     const uid = await helpers.getOrCreateDonor(params.email);
     params.sourceDonor = uid;
-    this.writeDonation(params)
+    await this.writeDonation(params)
     const msg = {msg:'successfully handled payment', uid: uid};
     return res.status(200).send({msg: msg, data: event});
   } catch (err) {
@@ -69,6 +69,9 @@ exports.writeDonation = async function(params) {
     costPerLearner = DEFAULTCPL;
   } else {
     costPerLearner = await helpers.getCostPerLearner(params.campaignID);
+    if (!costPerLearner) {
+      costPerLearner = DEFAULTCPL;
+    }
   }
   const docRef = dbRef.doc(params.sourceDonor);
   params['learnerCount'] = 0;

@@ -46,6 +46,8 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
         console.log(`successful payment for ${intent.amount}`);
         msg = await this.handlePaymentIntentSucceeded(intent, event.id);
         console.log(`msg: ${msg}`);
+      } else {
+        msg = {msg: 'this is not a FTL donation and will be ignored', data: {}};
       }
       break;
     default:
