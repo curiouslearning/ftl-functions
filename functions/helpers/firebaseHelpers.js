@@ -257,29 +257,29 @@ const sendEmail = async (uid, emailType) => {
     const email = data.email;
     const capitalized = firstName.charAt(0).toUpperCase();
     const formattedName = capitalized + firstName.slice(1);
-    return admin.auth().generateSignInWithEmailLink(email, actionCodeSettings)
-        .then((link)=>{
-          const textConfigOptions = {
-            url: link,
-            formattedName: formattedName,
-          };
-          emailText = customizeText(emailConfig.text, textConfigOptions);
-          const mailOptions = {
-            from: emailConfig.from,
-            to: email,
-            subject: emailConfig.subject,
-            text: emailText,
-          };
-          return transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-              console.error(error);
-              return;
-            } else {
-              console.log('email sent: ' + info.response);
-              return;
-            }
-          });
-        });
+    const textConfigOptions = {
+      url: 'followthelearners.curiouslearning.org/',
+      formattedName: formattedName,
+    };
+    if (emailConfig.utm_source) {
+      textConfigOptions.url = textConfigOptions.url + emailConfig.utm_source;
+    }
+    emailText = customizeText(emailConfig.text, textConfigOptions);
+    const mailOptions = {
+      from: emailConfig.from,
+      to: email,
+      subject: emailConfig.subject,
+      text: emailText,
+    };
+    return transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+        return;
+      } else {
+        console.log('email sent: ' + info.response);
+        return;
+      }
+    });
   });
 };
 
