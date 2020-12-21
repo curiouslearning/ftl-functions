@@ -7,15 +7,67 @@ if (admin.apps.length === 0) {
 }
 
 const DEFAULTCPL = 1.0;
+exports.logDonation = functions.https.onRequest(async (req, res) =>{
+  if (!req.body) {
+    return res.status(400).send('no data supplied!');
+  }
+  try {
+    const event = req.body;
+
+    const splitString = (event.campaignID||'').split('|');
+
+    let campaign = splitString[0] || 'MISSING'
+    let country = splitString[1] || 'MISSING'
+    let referralSource = splitString[2] || 'MISSING'
+    let amount = Number(event.amount);
+    if (event.coveredByDonor) {
+      amount = amount - Number(event.coveredByDonor);
+    }
+    const params = {
+      firstName: event.firstName,
+      email: event.email,
+      amount: amount,
+      frequency: event.frequency,
+      campaignID: campaign,
+      country: country,
+      referralSource: referralSource,
+    };
+    for (param in params) {
+      if (params[param] && params[param] === 'MISSING') {
+        params['needsAttention'] = true;
+      } else if (!params[param]) {
+        params[param] = 'MISSING';
+        params['needsAttention'] = true;
+      }
+    }
+    const uid = await helpers.getOrCreateDonor(params.email);
+    params.sourceDonor = uid;
+    await this.writeDonation(params)
+    const msg = {msg:'successfully handled payment', uid: uid};
+    return res.status(200).send({msg: msg, data: event});
+  } catch (err) {
+    const msg = {err: err};
+    console.error(`encountered an error handling payment: ${err}`);
+    return res.status(500).send({msg: msg, event: req.body})
+  }
+  });
 
 // TODO: refactor this to have non-essential queries run in an onCreate event
 exports.writeDonation = async function(params, existingDonation) {
   if(!existingDonation) existingDonation = {};
   const dbRef = admin.firestore().collection('donor_master');
-
-  let costPerLearner = get(existingDonation, 'costPerLearner',
-      params.country === 'any' ? DEFAULTCPL : await helpers.getCostPerLearner(params.campaignID));
-
+  if (!params.email || params.email === 'MISSING') {
+    console.error('No email was provided to identify or create a user!');
+  }
+  let costPerLearner;
+  if (params.country === 'any') {
+    costPerLearner = DEFAULTCPL;
+  } else {
+    costPerLearner = await helpers.getCostPerLearner(params.campaignID);
+    if (!costPerLearner) {
+      costPerLearner = DEFAULTCPL;
+    }
+  }
   const docRef = dbRef.doc(params.sourceDonor);
   params['learnerCount'] = get(existingDonation, 'learnerCount', 0);
   params['costPerLearner'] = costPerLearner;

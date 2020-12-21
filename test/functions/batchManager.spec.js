@@ -4,7 +4,6 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 adminInitStub = sinon.stub(admin, 'initializeApp');
 const { BatchManager } = require('../../functions/batchManager');
-const firestore = admin.firestore();
 var sandbox = require('sinon').createSandbox();
 beforeEach(()=>{
   adminInitStub.restore();

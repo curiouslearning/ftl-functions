@@ -240,6 +240,12 @@ const updateMasterLearnerCount = (country) => {
 * @return{Promise} A promise that resolves if the email successfully sends
 */
 const sendEmail = async (uid, emailType) => {
+  if (!uid || uid === '') {
+    throw new Error('a uid is required to send an email');
+  }
+  if (!emailType || !emailOptions.hasOwnProperty(emailType)) {
+    throw new Error(`email type ${emailType} is invalid. A valid email template must be used.`);
+  }
   const usrRef = admin.firestore().collection('donor_master').doc(uid);
   const emailConfig = emailOptions[emailType];
   let url = 'https://followthelearners.curiouslearning.org/campaigns';
@@ -257,29 +263,31 @@ const sendEmail = async (uid, emailType) => {
     const email = data.email;
     const capitalized = firstName.charAt(0).toUpperCase();
     const formattedName = capitalized + firstName.slice(1);
-    return admin.auth().generateSignInWithEmailLink(email, actionCodeSettings)
-        .then((link)=>{
-          const textConfigOptions = {
-            url: link,
-            formattedName: formattedName,
-          };
-          emailText = customizeText(emailConfig.text, textConfigOptions);
-          const mailOptions = {
-            from: emailConfig.from,
-            to: email,
-            subject: emailConfig.subject,
-            text: emailText,
-          };
-          return transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-              console.error(error);
-              return;
-            } else {
-              console.log('email sent: ' + info.response);
-              return;
-            }
-          });
-        });
+    const textConfigOptions = {
+      url: 'followthelearners.curiouslearning.org/',
+      formattedName: formattedName,
+    };
+    if (emailConfig.utm_source) {
+      textConfigOptions.url = textConfigOptions.url + emailConfig.utm_source;
+    }
+    emailText = customizeText(emailConfig.text, textConfigOptions);
+    const mailOptions = {
+      from: emailConfig.from,
+      to: email,
+      subject: emailConfig.subject,
+      text: emailText,
+    };
+    return transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+        return;
+      } else {
+        console.log('email sent: ' + info.response);
+        return;
+      }
+    });
+  }).catch((err) => {
+    console.error(err);
   });
 };
 
