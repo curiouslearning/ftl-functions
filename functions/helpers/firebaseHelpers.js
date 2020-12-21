@@ -240,6 +240,12 @@ const updateMasterLearnerCount = (country) => {
 * @return{Promise} A promise that resolves if the email successfully sends
 */
 const sendEmail = async (uid, emailType) => {
+  if (!uid || uid === '') {
+    throw new Error('a uid is required to send an email');
+  }
+  if (!emailType || !emailOptions.hasOwnProperty(emailType)) {
+    throw new Error(`email type ${emailType} is invalid. A valid email template must be used.`);
+  }
   const usrRef = admin.firestore().collection('donor_master').doc(uid);
   const emailConfig = emailOptions[emailType];
   let url = 'https://followthelearners.curiouslearning.org/campaigns';
@@ -280,6 +286,8 @@ const sendEmail = async (uid, emailType) => {
         return;
       }
     });
+  }).catch((err) => {
+    console.error(err);
   });
 };
 

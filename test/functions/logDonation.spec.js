@@ -211,32 +211,7 @@ describe('functions/logDonation', async () => {
       );
     });
   });
-  describe('functions/logDonation/sendNewLearnersEmail', async () => {
-    let displayName;
-    let email;
-    beforeEach(() => {
-      displayName= 'fake-firstName';
-      email= 'fake@email.biz';
-      sandbox.stub(auth, 'generateSignInWithEmailLink').resolves('fake-url');
-      sandbox.stub(myFunction, 'generateNewLearnersEmail').returns('email sent');
-    });
-    afterEach(() => {
-      sandbox.restore();
-    });
-
-    it('should throw an error if the email is missing', async () => {
-      email = '';
-      sandbox.spy(console, 'error');
-      await myFunction.sendNewLearnersEmail(displayName, email);
-      console.error.should.have.been.called;
-    });
-    it('should log an error if the link generation fails', async () => {
-      auth.generateSignInWithEmailLink.rejects('fake-error');
-      sandbox.spy(console, 'error');
-      await myFunction.sendNewLearnersEmail(displayName, email);
-      console.error.should.have.been.called;
-    });
-  });
+  
   describe('function/logDonation/createDonor', async () => {
     let params;
     let stubTime;
