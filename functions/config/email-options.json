@@ -3,18 +3,18 @@
 		"from": "followthelearners@curiouslearning.org",
 		"subject": "Follow the Learners -- Your Learners are Ready!",
 		"text": "Hi ${formattedName}, thank you for helping support Follow the Learners™! Click the link below, navigate to the \"Your Learners\" section, and enter your email to view how we're using your donation to bring reading into the lives of children!\n\n${url}\n\nIf you have any issues, please contact followthelearners@curiouslearning.org and we will be happy to assist you.\n\n~ Your Follow The Learners™ Team",
-		"utm_source": "?utm_source=donation_started"
+		"utm_source": "?utm_source=donation_started&referrer=update_email"
 	},
 	"halfwayMark": {
 		"from": "followthelearners@curiouslearning.org",
 		"subject": "Follow the Learners -- You've filled half your donation!",
 		"text": "Hi ${formattedName},  thank you for helping support Follow the Learners™! We've used half of your donation so far to help children access reading around the world! Click the link below and enter your email to view how we're using your donation to bring reading into the lives of children!\n\n${url}\n\nIf you have any issues, please contact followthelearners@curiouslearning.org and we will be happy to assist you.\n\n~ Your Follow The Learners™ Team",
-		"utm_source": "?utm_source=donation_halfway"
+		"utm_source": "?utm_source=donation_halfway&referrer=update_email"
 	},
 	"donationCompleted": {
 		"from": "followthelearners@curiouslearning.org",
 		"subject": "Follow the Learners -- Your Donation is Filled!",
-		"text": "Hi ${formattedName},\n Great news! All your donation has been put to work! Follow the link below to see all your learners.\n Once you’ve had a look at your new learners, please consider making another donation to bring reading into the lives of even more children.\n\n${url}\n\nIf you have any issues, please contact followthelearners@curiouslearning.org and we will be happy to assist you.\n\n~ Your Follow The Learners™ Team",
-		"utm_source": "?utm_source=donation_filled"
+		"text": "Hi ${formattedName},\n Great news! All your donation has been put to work!\n\n${url}\n\nIf you are touched and inspired by the impact you see your dollars making on these children who are just now teaching themselves to read, please click a link below to tell us:\n\t- I would like to do more now: followthelearners.curiouslearning.org/donate\n\t- I wish to be reminded of the opportunity to sponsor more children in the future. https://curiouslearning.us14.list-manage.com/subscribe?u=e7fc6811b410d9e7d8d5704ad&id=4b508ae5f2\n\nIf you have any issues, please contact followthelearners@curiouslearning.org and we will be happy to assist you.\n\n~ Your Follow The Learners™ Team",
+		"utm_source": "?utm_source=donation_filled&referrer=update_email"
 	}
 }

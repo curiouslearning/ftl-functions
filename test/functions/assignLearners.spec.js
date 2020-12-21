@@ -66,9 +66,8 @@ describe('functions/helpers/assignLearners', async () => {
     let campaignRef;
     let calcStub;
     let batchStub;
-    let allStub;
+    let queryStub;
     beforeEach(() => {
-      sandbox.stub(firestore.Query.prototype, 'get').resolves();
       donor = 'fake-donor';
       donation = 'fake-donation';
       country = 'fake-country';
@@ -81,23 +80,24 @@ describe('functions/helpers/assignLearners', async () => {
           sourceDonor: 'fake-donor',
         },
       };
-      donationStub = sandbox.stub(helpers, 'getDonation').resolves();
       campaignRef = {
         empty: false,
-        id: 'fake-campaign',
-        data: () => {
-          return {
-            costPerLearner: 1,
-          };
-        },
+        docs: [{
+          id: 'fake-campaign',
+          data: () => {
+            return {
+              costPerLearner: 1,
+            };
+          },
+        }],
       };
       poolRef = {
         empty: false,
       };
-      allStub = sandbox.stub(Promise, 'all').resolves([
-        donationRef,
-        campaignRef,
-      ]);
+      queryStub = sandbox.stub(firestore.Query.prototype, 'get')
+      queryStub.onFirstCall().resolves(campaignRef);
+      queryStub.onSecondCall().resolves(poolRef);
+      donationStub = sandbox.stub(helpers, 'getDonation').resolves(donationRef);
       batchStub = sandbox.stub(myFunction, 'batchWriteLearners').resolves();
       calcStub = sandbox.stub(myFunction, 'calculateUserCount');
       calcStub.returns(20);
@@ -124,7 +124,7 @@ describe('functions/helpers/assignLearners', async () => {
       );
     });
     it('should log an error to the console', async () => {
-      allStub.rejects('one of my promises failed');
+      queryStub.onFirstCall().rejects('one of my promises failed');
       sandbox.spy(console, 'error');
       await myFunction.assignInitialLearners(donor, donation, country);
       console.error.should.have.been.called;

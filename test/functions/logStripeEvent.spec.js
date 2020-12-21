@@ -17,6 +17,7 @@ afterEach(() => {
 describe('/functions/logStripeEvent', () => {
   const myFunction = require('../../functions/logStripeEvent');
   const logDonation = require('../../functions/logDonation');
+  const helpers = require('../../functions/helpers/firebaseHelpers');
   const Timestamp = admin.firestore.Firestore.Timestamp;
   const firestore = admin.firestore();
   describe('/logPaymentIntent', () => {
@@ -34,6 +35,7 @@ describe('/functions/logStripeEvent', () => {
       status.returns(res);
       this.request = sandbox.stub(http, 'request');
       handleStub = sandbox.stub(myFunction, 'handlePaymentIntentSucceeded');
+      handleStub.resolves({msg: 'success', data: {}});
       _event = {
         id: 'fake-event',
         type: 'payment_intent.succeeded',
@@ -59,7 +61,12 @@ describe('/functions/logStripeEvent', () => {
       await run();
       status.should.have.been.calledWith(200);
     });
-    it('should return 501', async () => {
+    it('should not log donations that are not from GiveLively', async () => {
+      _event.data.object.description= 'donation from fake-donor';
+      await run();
+      handleStub.should.not.have.been.called;
+    });
+    it('should return 400', async () => {
       _event = null;
       await run();
       status.should.have.been.calledWith(400);
@@ -75,7 +82,10 @@ describe('/functions/logStripeEvent', () => {
     let id;
     let writeStub;
     let expected;
+    let getOrCreateStub;
     beforeEach(() => {
+      getOrCreateStub = sandbox.stub(helpers, 'getOrCreateDonor');
+      getOrCreateStub.resolves('fake-donor');
       intent = {
         amount: 2076,
         description: 'Give Lively / Smart Donations',
@@ -97,6 +107,7 @@ describe('/functions/logStripeEvent', () => {
         country: 'fake-country',
         referralSource: 'fake-referral',
         frequency: 'one-time',
+        sourceDonor: 'fake-donor',
       };
       writeStub = sandbox.stub(logDonation, 'writeDonation').resolves();
     });
@@ -116,18 +127,14 @@ describe('/functions/logStripeEvent', () => {
     });
     it('should replace missing data with placeholder values', async () => {
       intent.metadata = {};
-      expected = {
-        stripeEventId: id,
-        firstName: 'MISSING',
-        email: 'MISSING',
-        amount: 20.76,
-        coveredByDonor: 'MISSING',
-        campaignID: 'MISSING',
-        country: 'MISSING',
-        referralSource: 'MISSING',
-        needsAttention: true,
-        frequency: 'one-time',
-      };
+      expected.firstName = 'MISSING';
+      expected.email = 'MISSING';
+      expected.coveredByDonor= 'MISSING';
+      expected.campaignID = 'MISSING';
+      expected.referralSource= 'MISSING';
+      expected.country = 'MISSING';
+      expected.amount = 20.76;
+      expected['needsAttention'] = true;
       await myFunction.handlePaymentIntentSucceeded(intent, id);
       writeStub.should.have.been.calledWith(expected);
     });

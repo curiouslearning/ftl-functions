@@ -13,10 +13,14 @@ afterEach(() => {
   sinon.restore();
 });
 
-describe('functions/helpers/firebaseHelpers', async () => {
+describe('functions/helpers/firebaseHelpers', () => {
   const myFunction = require('../../functions/helpers/firebaseHelpers');
   const {Client, Status} = require('@googlemaps/google-maps-services-js');
   const firestore = admin.firestore.Firestore;
+  const DocumentReference = admin.firestore.Firestore.DocumentReference;
+  const nodemailer = require('nodemailer');
+  const nodemailerConfig = require('../../functions/keys/nodemailerConfig');
+  const emailOptions = require('../../functions/config/email-options');
   describe('/getPinForAddress', async () => {
     let gmapsStub;
     let res;
@@ -431,6 +435,69 @@ describe('functions/helpers/firebaseHelpers', async () => {
       getStub.rejects('you failed');
       await myFunction.updateMasterLearnerCount('fake-country');
       console.error.should.have.been.called;
+    });
+  });
+  describe('/sendEmail', async () => {
+    let displayName;
+    let email;
+    let uid;
+    let emailType;
+    let docFake;
+    let docStub;
+    let transportStub;
+    let mailStub;
+    let transporter;
+    beforeEach(() => {
+      displayName= 'fake-firstName';
+      email= 'fake@email.biz';
+      uid = 'fake-donor';
+      emailType = 'donationStart';
+      transporter = {
+        sendMail: sandbox.stub().callsArgWith(1, null, {response: 'email sent'}),
+      };
+      transportStub = sandbox.stub(nodemailer, 'createTransport')
+      transportStub.returns(transporter);
+      docFake = {
+        data: () => {
+          return {
+            firstName: displayName,
+            email: email,
+          };
+        },
+      };
+      docStub = sandbox.stub(DocumentReference.prototype, 'get')
+      docStub.resolves(docFake);
+    });
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    it('should throw an error if the uid is missing', async () => {
+      try {
+        uid = '';
+        sandbox.spy(myFunction, 'sendEmail');
+        await myFunction.sendEmail(uid, emailType);
+      } catch (err) {
+        err.message.should.equal('a uid is required to send an email');
+      }
+      myFunction.sendEmail.should.have.thrown;
+    });
+    it('should log an error if it could not send the email', async () => {
+      transporter.sendMail = sandbox.stub().callsArgWith(1, 'fake-error', null);
+      sandbox.spy(console, 'error');
+      await myFunction.sendEmail(uid, emailType);
+      transporter.sendMail.should.have.been.called;
+      console.error.should.have.been.called;
+    });
+    it('should log an error if given an unsupported type', async () => {
+      try {
+        emailType = 'fake-type';
+        sandbox.spy(myFunction, 'sendEmail');
+        await myFunction.sendEmail(uid, emailType);
+      } catch (err) {
+        err.message.should.equal(`email type ${emailType} is invalid. A valid email template must be used.`);
+      }
+      myFunction.sendEmail.should.have.thrown;
     });
   });
 });
