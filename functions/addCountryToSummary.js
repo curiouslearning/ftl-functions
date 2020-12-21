@@ -1,5 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const isEmpty = require('lodash/isEmpty');
+
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -26,12 +28,15 @@ exports.addCountryToSummary = functions.firestore
 
         return summary.get().then((doc)=>{
             let countries = doc.data().countries;
-            //TODO - validate that the country is not already present in the list
-            countries.push({
-                country: country,
-                learnerCount: countrySum,
-                regions: regionCounts,
-            });
+
+            if(isEmpty(countries.find(c => c.country === country))) {
+                countries.push({
+                    country: country,
+                    learnerCount: countrySum,
+                    regions: regionCounts,
+                });
+            }
+
             return countries;
         }).then((countries)=>{  //Should not be .then.  The result from the previous method is not returning a promise
             return summary.update({countries: countries});
