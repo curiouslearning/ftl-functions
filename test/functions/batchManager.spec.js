@@ -1,21 +1,19 @@
-const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-adminInitStub = sinon.stub(admin, 'initializeApp');
-const { BatchManager } = require('../../functions/batchManager');
-const firestore = admin.firestore();
-var sandbox = require('sinon').createSandbox();
-beforeEach(()=>{
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(()=>{
-  adminInitStub.restore();
-});
+let sandbox = require('sinon').createSandbox();
+const proxyquire = require('proxyquire');
 
 describe('functions/BatchManager', function() {
+  beforeEach(()=>{
+  });
+
+  afterEach(()=>{
+    sandbox.restore();
+  });
+
+  const {BatchManager} = proxyquire('../../functions/batchManager', {
+    'firebase-admin': admin
+  });
   const firestore = admin.firestore();
   const date = new Date(Date.now());
   const getFakeUser = (i)=>{
@@ -36,7 +34,7 @@ describe('functions/BatchManager', function() {
   beforeEach(function() {
     manager = new BatchManager();
     commitStub = sandbox.stub(manager.batches[0], 'commit');
-    commitStub.returns(new Promise((res, rej)=>{
+    commitStub.returns(new Promise((res)=>{
       res('success!');
     }));
     docList = [];
@@ -153,10 +151,10 @@ describe('functions/BatchManager', function() {
         }
       }
       manager.batches.length.should.equal(2);
-      const secondBatch = sinon.stub(manager.batches[1], 'commit');
-      secondBatch.returns(new Promise((res, rej)=>{}));
+      const secondBatch = sandbox.stub(manager.batches[1], 'commit');
+      secondBatch.returns(new Promise(()=>{}));
       const clock = sinon.useFakeTimers();
-      const res = manager.commit();
+      manager.commit();
       await clock.tick(1050);
       commitStub.should.have.been.calledOnce;
       secondBatch.should.not.have.been.called;
@@ -171,7 +169,7 @@ describe('functions/BatchManager', function() {
       res.should.equal(true);
     });
     it('should log an error on unsuccessful commit', async ()=>{
-      commitStub.returns(new Promise((res, rej)=>{
+      commitStub.returns(new Promise(()=>{
          throw new TypeError('you failed!');
       }));
       await manager.commit();

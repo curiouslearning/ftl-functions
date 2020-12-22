@@ -1,36 +1,18 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-
-beforeEach(() => {
-    adminInitStub.restore();
-    adminInitStub = sinon.stub(admin, 'initializeApp');
-})
-
-afterEach(() => {
-    adminInitStub.restore();
-})
+const proxyquire = require('proxyquire');
 
 describe('functions/addCountryToSummary', function () {
-    const myFunction = require('../../functions/addCountryToSummary');
+    const sandbox = require('sinon').createSandbox();
+    let updateStub = sinon.stub();
 
-    let updateMethod = sinon.stub();
-    let collectionStub;
-    let docStub;
+    const myFunction = proxyquire('../../functions/addCountryToSummary', {'firebase-admin': admin});
+
     let snap;
 
     beforeEach(function () {
         sinon.spy(console, 'error');
-        // adminInitStub = sinon.stub(admin, 'initializeApp');
-
-        docStub = {
-            get: () => {return new Promise((res, rej) => {
-                res({ data: () => {
-                return { countries: [{learnerCount: 1, country: 'fake-country', regions: 'fake-region'}]}}})
-            })},
-            update: updateMethod
-        };
 
         snap = {
             data: () => {
@@ -39,21 +21,37 @@ describe('functions/addCountryToSummary', function () {
                 }
             }
         };
+
+        sandbox.stub(admin, 'firestore')
+            .get(() => () => {
+                return {
+                    collection: () => {
+                        return { doc: () => {
+                            return {
+                                get: () => new Promise(res => res({ data: () => {
+                                    return { countries: [
+                                        {
+                                            learnerCount: 1,
+                                            country: 'fake-country-existing',
+                                            regions: 'fake-region-existing'
+                                        }]}}})),
+                                update: updateStub
+                            }
+                        }}
+                    }
+                }
+            });
     });
 
-    const run = async (snap) => {
-        collectionStub = sinon.stub(admin.firestore(), 'collection');
-        collectionStub.returns({doc: () => docStub})
+    afterEach(() => {
+        console.error.restore();
+        sandbox.restore();
+    })
 
+    const run = async (snap) => {
         const wrapped = test.wrap(myFunction.addCountryToSummary);
         await wrapped(snap);
     }
-
-    afterEach(() => {
-        collectionStub.restore();
-        console.error.restore();
-        adminInitStub.restore();
-    })
 
     describe('addCountryToSummary', function () {
         it('should call to the aggregate_data collection to get a RegionSummary doc', async () => {
@@ -67,12 +65,12 @@ describe('functions/addCountryToSummary', function () {
 
             await run(snap);
 
-            updateMethod.should.have.been.calledWith({
+            updateStub.should.have.been.calledWith({
                 countries: [
                     {
                         learnerCount: 1,
-                        country: 'fake-country',
-                        regions: 'fake-region'
+                        country: 'fake-country-existing',
+                        regions: 'fake-region-existing'
                     },
                     {
                         country: 'fake-country',
@@ -91,11 +89,11 @@ describe('functions/addCountryToSummary', function () {
         it('should log an error if unable to update the collection', async () => {
 
             const error = new Error("collection-update-error");
-            docStub.update = sinon.stub().throws(error);
+            updateStub = sinon.stub().throws(error);
 
             await run(snap);
 
-            updateMethod.should.have.been.called;
+            updateStub.should.have.been.called;
             console.error.should.have.been.called;
         })
     })

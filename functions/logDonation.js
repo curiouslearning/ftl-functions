@@ -1,16 +1,11 @@
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
-const cors = require('cors')({origin: true});
-const mailConfig = require('./keys/nodemailerConfig.json');
-const {Client, Status} = require('@googlemaps/google-maps-services-js');
-const BatchManager = require('./batchManager').BatchManager;
 const helpers = require('./helpers/firebaseHelpers');
-const assignLearners = require('./helpers/assignLearners');
+const {isEmpty, get} = require('lodash');
+const functions = require('firebase-functions');
+
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-const gmaps = new Client({});
 
 const DEFAULTCPL = 1.0;
 exports.logDonation = functions.https.onRequest(async (req, res) =>{
@@ -46,10 +41,14 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
         params['needsAttention'] = true;
       }
     }
-    const uid = await helpers.getOrCreateDonor(params.email);
-    params.sourceDonor = uid;
+    try {
+      params.sourceDonor = await helpers.getOrCreateDonor(params);
+    } catch(err) {
+      console.err(err);
+    }
+
     await this.writeDonation(params)
-    const msg = {msg:'successfully handled payment', uid: uid};
+    const msg = {msg:'successfully handled payment', uid: params.sourceDonor};
     return res.status(200).send({msg: msg, data: event});
   } catch (err) {
     const msg = {err: err};
@@ -59,7 +58,8 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
   });
 
 // TODO: refactor this to have non-essential queries run in an onCreate event
-exports.writeDonation = async function(params) {
+exports.writeDonation = async function(params, existingDonation) {
+  if(!existingDonation) existingDonation = {};
   const dbRef = admin.firestore().collection('donor_master');
   if (!params.email || params.email === 'MISSING') {
     console.error('No email was provided to identify or create a user!');
@@ -74,16 +74,31 @@ exports.writeDonation = async function(params) {
     }
   }
   const docRef = dbRef.doc(params.sourceDonor);
-  params['learnerCount'] = 0;
+  params['learnerCount'] = get(existingDonation, 'learnerCount', 0);
   params['costPerLearner'] = costPerLearner;
-  params['countries'] = [];
-  params['startDate'] = admin.firestore.Firestore.Timestamp.now();
+  params['countries'] = get(existingDonation, 'countries', []);
+  params['startDate'] = get(existingDonation, 'startDate', admin.firestore.Firestore.Timestamp.now());
+  params['chargeId'] = get()
+  //If the donation already exists, only persist the updated document without assigning learners or sending an email
+  if(!isEmpty(existingDonation)) {
+    try {
+      if(!existingDonation.donationID) {
+        console.error(`The existing donation with eventID: ${existingDonation.stripeEventId} does not have a donation ID.  Aborting`);
+        throw new Error('Unable to persist donation due to lack of donation ID');
+      }
+      params.donationID = existingDonation.donationID;
+      await docRef.collection('donations').doc(existingDonation.donationID).update(params);
+    } catch(err) {
+      console.error(`Error when trying to update the existing donation object with donationId: ${existingDonation.donationID}`);
+      throw err;
+    }
+    return {sourceDonor: params.sourceDonor, donationId: existingDonation.donationID, country: params.country};
+  }
+
   return docRef.collection('donations').add(params).then((doc)=>{
     const donationID = doc.id;
     doc.update({donationID: donationID});
-    return assignLearners.assign(params.sourceDonor, donationID, params.country);
-  }).then(()=>{
-    return helpers.sendEmail(params.sourceDonor, 'donationStart');
+    return {sourceDonor: params.sourceDonor, donationID, country: params.country};
   }).catch((err)=>{
     console.error(err);
   });

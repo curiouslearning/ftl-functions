@@ -2,6 +2,9 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const logDonation = require('./logDonation');
 const helpers = require('./helpers/firebaseHelpers');
+const {get, isEmpty} = require('lodash');
+const assignLearners = require('./helpers/assignLearners');
+
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -39,12 +42,37 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   console.log(`parsing event with id ${event.id}`);
   let intent;
   let msg;
+
+  //There should only be a single charge for every donation
+  const chargeId = get(event, 'data.object.charges.data', []).map(charge => charge.id)[0];
+
+  if(!chargeId) {
+    console.error(`Error - there is no chargeId for eventId: ${event.id}`);
+  }
+
+  //Determine if this is a replay-event
+  let existingDonation;
+  try {
+    existingDonation = await admin.firestore().collectionGroup('donations').where('stripeEventId', '==', event.id).get();
+  } catch(err) {
+    const errorMsg = `Error when trying to pull the existing donation with eventId: ${event.id}`;
+    console.error(errorMsg);
+    return res.status(500).send(errorMsg);
+  }
+
+  if(!existingDonation.empty) {
+    console.log(`Replay of existing donation with eventId: ${event.id}`);
+    existingDonation = existingDonation.docs[0].data();  //Always take the first record
+  } else {
+    existingDonation = {};  //Ensure that the object is empty to avoid random properties from the firestore read
+  }
+
   switch (event.type) {
     case 'payment_intent.succeeded':
       intent = event.data.object;
       if (intent.description === 'Give Lively / Smart Donations') {
         console.log(`successful payment for ${intent.amount}`);
-        msg = await this.handlePaymentIntentSucceeded(intent, event.id);
+        msg = await this.handlePaymentIntentSucceeded(intent, event.id, chargeId, existingDonation);
         console.log(`msg: ${msg}`);
       } else {
         msg = {msg: 'this is not a FTL donation and will be ignored', data: {}};
@@ -65,7 +93,7 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   return res.send({msg: msg, obj: event});
 });
 
-exports.handlePaymentIntentSucceeded = async (intent, id) => {
+exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDonation) => {
   let metadata;
   let amount = intent.amount/100; // convert from cents to dollars
   try {
@@ -82,6 +110,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
     const params = {
+      chargeId,
       stripeEventId: id,
       firstName: firstName,
       email: email,
@@ -105,15 +134,29 @@ exports.handlePaymentIntentSucceeded = async (intent, id) => {
         console.warn(`event ${id} is missing param ${param}`);
       }
     }
-    const uid = await helpers.getOrCreateDonor(params);
+    const uid = get(existingDonation, 'sourceDonor', await helpers.getOrCreateDonor(params));
     params['sourceDonor'] = uid;
     console.log(`user is ${uid}`);
-    logDonation.writeDonation(params); // kick off the asynchronous write
-    return {msg: 'successfully handled intent', data: {uid: uid}};
+
+    const donationResults = await logDonation.writeDonation(params, existingDonation);
+
+    if(isEmpty(existingDonation)) {  //Only assign learners and send an email if there's not an existing donation
+      await assignLearners.assign(donationResults.sourceDonor, donationResults.donationID, donationResults.country);
+
+      if (!params.email || params.email === 'MISSING') {
+        console.error('No email was provided to identify or create a user!');
+      } else {
+        helpers.sendEmail(params.sourceDonor, 'donationStart');
+      }
+    }
+
+    let msg = `Successfully handled intent.  ${!isEmpty(existingDonation) ? 
+        `Duplicate payment found.  Replaying event: ${existingDonation.stripeEventId}` : ''}`
+    return {msg, data: {uid: uid}};
   } catch (err) {
     const data = {id: id, err: err};
     console.error(`error handling payment intent with id ${id}: ${err}`);
     console.error(err);
-    return {msg: 'could not handle payment', data: data};
+    return {msg: 'could not handle payment', data: data, err};
   }
 };

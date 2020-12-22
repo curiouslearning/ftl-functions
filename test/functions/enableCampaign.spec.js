@@ -1,21 +1,18 @@
 const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const sandbox = require('sinon').createSandbox();
+const proxyquire = require('proxyquire');
 
-beforeEach(() => {
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(() => {
-  adminInitStub.restore();
-  sandbox.restore();
-});
 
 describe('functions/enableCampaign', async () => {
-  const myFunction = require('../../functions/enableCampaign');
+  beforeEach(() => {
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  const myFunction = proxyquire('../../functions/enableCampaign', {'firebase-admin': admin});
   const firestore = admin.firestore.Firestore;
   let snap;
   let context;
@@ -34,9 +31,9 @@ describe('functions/enableCampaign', async () => {
       params: {},
     };
     updateStub = sandbox.stub(firestore.DocumentReference.prototype, 'update');
-    updateStub.returns(new Promise((res, rej)=>{res('success');}));
+    updateStub.returns(new Promise((res)=>{res('success');}));
     getStub = sandbox.stub(firestore.Query.prototype, 'get');
-    getStub.returns(new Promise((res, rej) => {
+    getStub.returns(new Promise((res) => {
       let snap = {
         empty: false,
         docs: [],
@@ -58,10 +55,9 @@ describe('functions/enableCampaign', async () => {
     sandbox.restore();
   });
   it('should not update if no campaigns are disabled', async () => {
-    getStub.returns(new Promise((res, rej) =>{
+    getStub.returns(new Promise((res) =>{
       res({empty: true});
     }));
-    const res = await wrapped(snap, context);
     updateStub.should.not.have.been.called;
   });
   it('should update on disabled campaigns matching the new user\'s country', async () => {

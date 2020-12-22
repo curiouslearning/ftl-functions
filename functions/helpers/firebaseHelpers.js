@@ -142,18 +142,19 @@ const getCostPerLearner = (campaignID) => {
       });
 };
 
-const getOrCreateDonor = (params) => {
-  return getDonorID(params.email).then((foundID)=>{
-    if (foundID === '') {
-      console.log('creating new donor: ', params.email);
-      return createDonor(params);
-    } else {
-      return foundID;
+const getOrCreateDonor = async (params) => {
+    try {
+        const foundID = await getDonorID(params.email);
+        if (foundID === '') {
+            console.log('creating new donor: ', params.email);
+            return createDonor(params);
+        } else {
+            return foundID;
+        }
+    } catch(err) {
+        console.error(err);
     }
-  }).catch((err)=>{
-    console.error(err);
-  });
-};
+}
 
 const createDonor = function(params) {
   const dbRef = admin.firestore().collection('donor_master');
@@ -178,16 +179,16 @@ const createDonor = function(params) {
   });
 };
 
-const getDonorID = (email) => {
-  return admin.auth().getUserByEmail(email)
-      .then((user)=>{
+const getDonorID = async (email) => {
+    try {
+        const user = await admin.auth().getUserByEmail(email);
         return user.uid;
-      }).catch((err)=>{
+    } catch(err) {
         if (err.code === 'auth/user-not-found') {
-          console.log('No Donor found for email: ', email);
-          return '';
+            console.log('No Donor found for email: ', email);
+            return '';
         } else throw new Error(err);
-      });
+    }
 };
 
 const getDonation = (donorID, donationID) => {
