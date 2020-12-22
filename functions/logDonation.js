@@ -78,7 +78,7 @@ exports.writeDonation = async function(params, existingDonation) {
   params['costPerLearner'] = costPerLearner;
   params['countries'] = get(existingDonation, 'countries', []);
   params['startDate'] = get(existingDonation, 'startDate', admin.firestore.Firestore.Timestamp.now());
-  params['chargeId'] = get()
+  params['chargeId'] = get(existingDonation, 'chargeId', params.chargeId);
   //If the donation already exists, only persist the updated document without assigning learners or sending an email
   if(!isEmpty(existingDonation)) {
     try {
