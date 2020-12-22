@@ -1,14 +1,13 @@
-const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const firestore = admin.firestore();
 const helpers = require('../../functions/helpers/firebaseHelpers');
 const { BatchManager } = require('../../functions/batchManager');
-var sandbox = require('sinon').createSandbox();
+const proxyquire = require('proxyquire');
+let sandbox = require('sinon').createSandbox();
 
 describe('functions/forceRegionRecalculation', function() {
-    const functionToTest = require('../../functions/forceRegionRecalculation');
+    const functionToTest = proxyquire('../../functions/forceRegionRecalculation', {'firebase-admin': admin});
 
     let updateMethod = sinon.stub();
     let collectionStub;
@@ -17,8 +16,6 @@ describe('functions/forceRegionRecalculation', function() {
     let res, req;
 
     beforeEach(function () {
-        adminInitStub.restore();
-        adminInitStub = sandbox.stub(admin, 'initializeApp');
         regionStub = sandbox.stub(helpers, 'updateCountForRegion');
         regionStub.returns(new Promise((res) => {return res(1);}));
         sandbox.stub(BatchManager.prototype, 'set');
@@ -32,7 +29,7 @@ describe('functions/forceRegionRecalculation', function() {
         }
 
         docStub = {
-            get: () => {return new Promise((res, rej) => {
+            get: () => {return new Promise((res) => {
                 res({ data: () => {
                         return { countries: [{learnerCount: 1, country: 'fake-country', regions: 'fake-region'}]}}})
             })},
@@ -84,7 +81,6 @@ describe('functions/forceRegionRecalculation', function() {
         collectionStub.restore();
         console.error.restore();
         console.log.restore();
-        adminInitStub.restore();
     })
 
     describe('forceRegionRecalculation', function() {

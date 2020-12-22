@@ -1,21 +1,18 @@
 const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
+const proxyquire = require('proxyquire');
 const admin = require('firebase-admin');
 const sandbox = require('sinon').createSandbox();
 
-beforeEach(() => {
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(() => {
-  adminInitStub.restore();
-  sandbox.restore();
-});
-
 describe('functions/disableCampaign', async () => {
-  const myFunction = require('../../functions/disableCampaign');
+  beforeEach(() => {
+
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  const myFunction = proxyquire('../../functions/disableCampaign', {'firebase-admin': admin});
   const firestore = admin.firestore.Firestore;
   let before;
   let after;
@@ -49,11 +46,11 @@ describe('functions/disableCampaign', async () => {
       },
     };
     updateStub = sandbox.stub(firestore.DocumentReference.prototype, 'update');
-    updateStub.returns(new Promise((res, rej) => {
+    updateStub.returns(new Promise((res) => {
       res('success');
     }));
     getStub = sandbox.stub(firestore.Query.prototype, 'get');
-    getStub.returns(new Promise((res, rej) => {
+    getStub.returns(new Promise((res) => {
       res({size: 0});
     }));
     wrapped = test.wrap(myFunction.disableCampaign);
@@ -74,7 +71,7 @@ describe('functions/disableCampaign', async () => {
     updateStub.should.not.have.been.called;
   });
   it('should not run if matching unassigned users are available', async () => {
-    getStub.returns(new Promise((res, rej) => {
+    getStub.returns(new Promise((res) => {
       res({size: 3});
     }));
     const change = test.makeChange(before, after);

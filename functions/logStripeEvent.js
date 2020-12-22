@@ -46,6 +46,10 @@ exports.logPaymentIntent = functions.https.onRequest(async (req, res) => {
   //There should only be a single charge for every donation
   const chargeId = get(event, 'data.object.charges.data', []).map(charge => charge.id)[0];
 
+  if(!chargeId) {
+    console.error(`Error - there is no chargeId for eventId: ${event.id}`);
+  }
+
   //Determine if this is a replay-event
   let existingDonation;
   try {
@@ -134,17 +138,18 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
     params['sourceDonor'] = uid;
     console.log(`user is ${uid}`);
 
-    const donationResults = await logDonation.writeDonation(params, existingDonation); // kick off the asynchronous write
+    const donationResults = await logDonation.writeDonation(params, existingDonation);
 
-    if(isEmpty(existingDonation)) {  //Only assign learners if there's not an existing donation
+    if(isEmpty(existingDonation)) {  //Only assign learners and send an email if there's not an existing donation
       await assignLearners.assign(donationResults.sourceDonor, donationResults.donationID, donationResults.country);
+
+      if (!params.email || params.email === 'MISSING') {
+        console.error('No email was provided to identify or create a user!');
+      } else {
+        helpers.sendEmail(params.sourceDonor, 'donationStart');
+      }
     }
 
-    if (!params.email || params.email === 'MISSING') {
-      console.error('No email was provided to identify or create a user!');
-    } else {
-      helpers.sendEmail(params.sourceDonor, 'donationStart');
-    }
     let msg = `Successfully handled intent.  ${!isEmpty(existingDonation) ? 
         `Duplicate payment found.  Replaying event: ${existingDonation.stripeEventId}` : ''}`
     return {msg, data: {uid: uid}};

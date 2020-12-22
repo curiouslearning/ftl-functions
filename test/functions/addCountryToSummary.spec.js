@@ -3,13 +3,11 @@ const sinon = require('sinon');
 const admin = require('firebase-admin');
 const proxyquire = require('proxyquire');
 
-describe.only('functions/addCountryToSummary', function () {
+describe('functions/addCountryToSummary', function () {
     const sandbox = require('sinon').createSandbox();
     let updateStub = sinon.stub();
 
-    const myFunction = proxyquire('../../functions/addCountryToSummary', {
-        'firebase-admin': admin
-    });
+    const myFunction = proxyquire('../../functions/addCountryToSummary', {'firebase-admin': admin});
 
     let snap;
 

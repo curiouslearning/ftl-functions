@@ -1,21 +1,20 @@
 const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const sandbox = require('sinon').createSandbox();
-beforeEach(() => {
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(() => {
-  adminInitStub.restore();
-  sandbox.restore();
-});
+const sinon = require('sinon');
+const proxyquire = require('proxyquire');
+const cloneDeep = require('lodash/cloneDeep');
+const stubbedAdmin = cloneDeep(admin);
+let sandbox;
 
 describe('functions/checkForDonationEndDate', async () => {
-  const myFunction = require('../../functions/checkForDonationEndDate');
-  const firestore = admin.firestore();
+  beforeEach(() => {
+    sandbox = sinon.createSandbox();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+  const myFunction = proxyquire('../../functions/checkForDonationEndDate', {'firebase-admin': stubbedAdmin});
   let before;
   let after;
   let context;
@@ -42,12 +41,12 @@ describe('functions/checkForDonationEndDate', async () => {
         documentId: 'fake-doc',
       },
     };
-    setStub = sandbox.stub(admin.firestore.Firestore.DocumentReference.prototype, 'set');
+    setStub = sandbox.stub(stubbedAdmin.firestore.Firestore.DocumentReference.prototype, 'set');
     setStub.resolves();
     spy = sandbox.spy(myFunction.checkForDonationEndDate);
     wrapped = test.wrap(myFunction.checkForDonationEndDate);
-    staticTime = admin.firestore.Firestore.Timestamp.now();
-    timeStub = sandbox.stub(admin.firestore.Firestore.Timestamp, 'now');
+    staticTime = stubbedAdmin.firestore.Firestore.Timestamp.now();
+    timeStub = sandbox.stub(stubbedAdmin.firestore.Firestore.Timestamp, 'now');
     timeStub.returns(staticTime);
   });
 
@@ -55,7 +54,7 @@ describe('functions/checkForDonationEndDate', async () => {
     sandbox.restore();
   });
   it('should only run if the donation is full', async () => {
-    after= {data: ()=>{return {percentFilled: 90};}};
+    after = {data: ()=>{return {percentFilled: 90};}};
     const change = test.makeChange(before, after);
     wrapped(change, context);
     setStub.should.not.have.been.called;
@@ -65,7 +64,7 @@ describe('functions/checkForDonationEndDate', async () => {
       data: ()=>{
         return {
           percentFilled: 100,
-          endDate: admin.firestore.Firestore.Timestamp.now(),
+          endDate: stubbedAdmin.firestore.Firestore.Timestamp.now(),
         };
       },
     };

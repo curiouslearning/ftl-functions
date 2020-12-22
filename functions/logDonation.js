@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 const helpers = require('./helpers/firebaseHelpers');
 const {isEmpty, get} = require('lodash');
+const functions = require('firebase-functions');
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -40,10 +41,14 @@ exports.logDonation = functions.https.onRequest(async (req, res) =>{
         params['needsAttention'] = true;
       }
     }
-    const uid = await helpers.getOrCreateDonor(params.email);
-    params.sourceDonor = uid;
+    try {
+      params.sourceDonor = await helpers.getOrCreateDonor(params);
+    } catch(err) {
+      console.err(err);
+    }
+
     await this.writeDonation(params)
-    const msg = {msg:'successfully handled payment', uid: uid};
+    const msg = {msg:'successfully handled payment', uid: params.sourceDonor};
     return res.status(200).send({msg: msg, data: event});
   } catch (err) {
     const msg = {err: err};
@@ -73,7 +78,7 @@ exports.writeDonation = async function(params, existingDonation) {
   params['costPerLearner'] = costPerLearner;
   params['countries'] = get(existingDonation, 'countries', []);
   params['startDate'] = get(existingDonation, 'startDate', admin.firestore.Firestore.Timestamp.now());
-
+  params['chargeId'] = get()
   //If the donation already exists, only persist the updated document without assigning learners or sending an email
   if(!isEmpty(existingDonation)) {
     try {

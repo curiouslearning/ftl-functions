@@ -1,21 +1,19 @@
 const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const sandbox = require('sinon').createSandbox();
-
-beforeEach(() => {
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(() => {
-  adminInitStub.restore();
-  sandbox.restore();
-});
+const proxyquire = require('proxyquire');
+let sinon = require('sinon');
+let sandbox;
 
 describe('functions/reEnableMonthlyDonation', async () => {
-  const myFunction = require('../../functions/reEnableMonthlyDonation');
+    beforeEach(() => {
+        sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+        sandbox.restore();
+    });
+
+  const myFunction = proxyquire('../../functions/reEnableMonthlyDonation', {'firebase-admin': admin});
   const firestore = admin.firestore.Firestore;
   let before;
   let after;
@@ -55,7 +53,7 @@ describe('functions/reEnableMonthlyDonation', async () => {
   });
   it('should not run if percentFilled is increased', async () => {
     const change = test.makeChange(before, after);
-    const res = await wrapped(change, context);
+    await wrapped(change, context);
     after.ref.update.should.not.have.been.called;
   });
   it('should run if percentFilled has decreased', async () => {

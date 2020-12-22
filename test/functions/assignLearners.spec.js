@@ -1,24 +1,31 @@
-const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const sandbox = require('sinon').createSandbox();
-
-beforeEach(()=>{
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(()=>{
-  adminInitStub.restore();
-  sandbox.restore();
-});
+const proxyquire = require('proxyquire');
+const cloneDeep = require('lodash/cloneDeep');
+const stubbedAdmin = cloneDeep(admin);
+let stubTime;
+let timeStub;
 
 describe('functions/helpers/assignLearners', async () => {
-  const myFunction = require('../../functions/helpers/assignLearners');
+  beforeEach(()=>{
+    stubTime = admin.firestore.Timestamp.now();
+    timeStub = sandbox.stub(stubbedAdmin.firestore.Timestamp, 'now').returns(stubTime);
+  });
+
+  afterEach(()=>{
+    sandbox.restore();
+    timeStub.restore();
+  });
+
+  const myFunction = proxyquire('../../functions/helpers/assignLearners', {
+    'firebase-admin': stubbedAdmin
+  });
+
   const helpers = require('../../functions/helpers/firebaseHelpers');
   const {BatchManager} = require('../../functions/batchManager');
-  const firestore = admin.firestore.Firestore;
+  const firestore = stubbedAdmin.firestore.Firestore;
+
   describe('/assign', () => {
     beforeEach(() => {
       sandbox.stub(myFunction, 'assignInitialLearners');
@@ -67,6 +74,7 @@ describe('functions/helpers/assignLearners', async () => {
     let calcStub;
     let batchStub;
     let queryStub;
+
     beforeEach(() => {
       donor = 'fake-donor';
       donation = 'fake-donation';
@@ -101,6 +109,7 @@ describe('functions/helpers/assignLearners', async () => {
       batchStub = sandbox.stub(myFunction, 'batchWriteLearners').resolves();
       calcStub = sandbox.stub(myFunction, 'calculateUserCount');
       calcStub.returns(20);
+
     });
     afterEach(() => {
       sandbox.restore();
@@ -126,6 +135,7 @@ describe('functions/helpers/assignLearners', async () => {
     it('should log an error to the console', async () => {
       queryStub.onFirstCall().rejects('one of my promises failed');
       sandbox.spy(console, 'error');
+      helpers.getDonation.returns(new Promise((res, rej) => rej('fake-error')));
       await myFunction.assignInitialLearners(donor, donation, country);
       console.error.should.have.been.called;
     });
@@ -201,17 +211,12 @@ describe('functions/helpers/assignLearners', async () => {
     let donation;
     let snapshot;
     let learnerCount;
-    let managerStub;
-    let managerDoc;
-    let stubTime;
-    let timeStub;
     let queueStub;
     let expected;
     let aggStub;
     beforeEach(() => {
       aggStub = sandbox.stub(myFunction, 'addLearnersToDonationSummary');
-      stubTime = firestore.Timestamp.now();
-      timeStub = sandbox.stub(firestore.Timestamp, 'now').returns(stubTime);
+
       learnerCount = 2;
       donation = {
         id: 'fake-donation',

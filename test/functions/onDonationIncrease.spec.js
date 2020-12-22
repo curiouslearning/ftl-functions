@@ -1,21 +1,18 @@
 const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const sandbox = require('sinon').createSandbox();
+let sinon = require('sinon');
+const proxyquire = require('proxyquire');
 
-beforeEach(() => {
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(() => {
-  adminInitStub.restore();
-  sandbox.restore();
-});
-// TODO: Figure out why Mocha won't run these tests...
 describe('functions/onDonationIncrease', async () => {
-  const myFunction = require('../../functions/onDonationIncrease');
+    beforeEach(() => {
+        sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+        sandbox.restore();
+    });
+
+  const myFunction = proxyquire('../../functions/onDonationIncrease', {'firebase-admin': admin});
   const firestore = admin.firestore.Firestore;
   let before;
   let after;
@@ -70,12 +67,12 @@ describe('functions/onDonationIncrease', async () => {
       },
     };
     updateStub = sandbox.stub(firestore.DocumentReference.prototype, 'update');
-    updateStub.returns(new Promise((res, rej)=>{
+    updateStub.returns(new Promise((res)=>{
       res('success');
     }));
     wrapped = test.wrap(myFunction.onDonationIncrease);
     getStub = sandbox.stub(firestore.Query.prototype, 'get');
-    getStub.returns(new Promise((res, rej)=>{
+    getStub.returns(new Promise((res)=>{
       res({
         docs: [campaignDoc],
       });

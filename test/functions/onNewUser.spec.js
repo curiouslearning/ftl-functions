@@ -1,19 +1,20 @@
 const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const helpers = require('../../functions/helpers/firebaseHelpers');
-const sandbox = require('sinon').createSandbox();
-beforeEach(() => {
-  sandbox.restore();
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-afterEach(() => {
-  adminInitStub.restore();
-});
+const proxyquire = require('proxyquire');
+let sinon = require('sinon');
+let sandbox;
+
 describe('functions/onNewUser', async () => {
-  const myFunction = require('../../functions/onNewUser');
+    beforeEach(() => {
+        sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+        sandbox.restore();
+    });
+
+  const myFunction = proxyquire('../../functions/onNewUser', {'firebase-admin': admin});
   const firestore = admin.firestore.Firestore;
   let snap;
   let context;

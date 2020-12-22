@@ -1,20 +1,19 @@
 const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functions = require('firebase-functions');
+const proxyquire = require('proxyquire');
 const admin = require('firebase-admin');
-const sandbox = require('sinon').createSandbox();
-
-beforeEach(()=>{
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-afterEach(() => {
-  adminInitStub.restore();
-  sinon.restore();
-});
+let sandbox;
 
 describe('functions/updateDonationLearnerCount', async () => {
-  const myFunction = require('../../functions/updateDonationLearnerCount');
+    beforeEach(()=>{
+        sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+  const myFunction = proxyquire('../../functions/updateDonationLearnerCount', {'firebase-admin': admin});
   const firestore = admin.firestore.Firestore;
   describe('functions/updateDonationLearnerCount/updateDonationLearnerCount', async() => {
     let before;

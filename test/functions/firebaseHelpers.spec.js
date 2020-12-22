@@ -1,26 +1,21 @@
-const test = require('firebase-functions-test')();
-const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const sandbox = require('sinon').createSandbox();
-
-beforeEach(()=>{
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-afterEach(() => {
-  adminInitStub.restore();
-  sinon.restore();
-});
+const proxyquire = require('proxyquire');
 
 describe('functions/helpers/firebaseHelpers', () => {
-  const myFunction = require('../../functions/helpers/firebaseHelpers');
-  const {Client, Status} = require('@googlemaps/google-maps-services-js');
+  beforeEach(()=>{
+
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  const myFunction = proxyquire('../../functions/helpers/firebaseHelpers', {'firebase-admin': admin});
+  const {Client} = require('@googlemaps/google-maps-services-js');
   const firestore = admin.firestore.Firestore;
   const DocumentReference = admin.firestore.Firestore.DocumentReference;
   const nodemailer = require('nodemailer');
-  const nodemailerConfig = require('../../functions/keys/nodemailerConfig');
-  const emailOptions = require('../../functions/config/email-options');
   describe('/getPinForAddress', async () => {
     let gmapsStub;
     let res;
@@ -69,7 +64,6 @@ describe('functions/helpers/firebaseHelpers', () => {
     let updateStub;
     let campaign;
     let snapshot;
-    let err;
     beforeEach(() => {
       campaign = 'fake-campaign';
       updateStub = sandbox.stub().resolves();
@@ -122,7 +116,6 @@ describe('functions/helpers/firebaseHelpers', () => {
   describe('/updateCountForRegion', async () => {
     let getStub;
     let doc;
-    let getPinstub;
     let setStub;
     let country;
     let region;
@@ -206,7 +199,7 @@ describe('functions/helpers/firebaseHelpers', () => {
       });
     });
     it('should generate a new region and increment the count', async () => {
-      region = 'fake-region2',
+      region = 'fake-region2';
       await myFunction.updateCountForRegion(country, region);
       setStub.should.have.been.calledWith({
         learnerCount: 51,
@@ -299,7 +292,7 @@ describe('functions/helpers/firebaseHelpers', () => {
     it('should throw an error', async () => {
       authStub.rejects(new Error('you failed'));
       try {
-        const res = await myFunction.getDonorID('fake@email.biz');
+        await myFunction.getDonorID('fake@email.biz');
       } catch (e) {
         e.message.should.equal('Error: you failed');
       }
@@ -389,7 +382,7 @@ describe('functions/helpers/firebaseHelpers', () => {
     it('should throw an error', async () => {
       arr = 2;
       sandbox.spy(myFunction.findObjWithProperty);
-      const index = myFunction.findObjWithProperty(arr, prop, val);
+      myFunction.findObjWithProperty(arr, prop, val);
       myFunction.findObjWithProperty.should.have.thrown;
     });
   });
@@ -445,7 +438,6 @@ describe('functions/helpers/firebaseHelpers', () => {
     let docFake;
     let docStub;
     let transportStub;
-    let mailStub;
     let transporter;
     beforeEach(() => {
       displayName= 'fake-firstName';

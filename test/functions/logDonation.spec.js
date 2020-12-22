@@ -1,26 +1,21 @@
-const test = require('firebase-functions-test')();
 const sinon = require('sinon');
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const PassThrough = require('stream').PassThrough;
 const http = require('http');
-const nodemailer = require('nodemailer');
-const Mailer = require('nodemailer/lib/Mailer');
 const sandbox = require('sinon').createSandbox();
+const proxyquire = require('proxyquire');
 
-beforeEach(()=>{
-  adminInitStub.restore();
-  adminInitStub = sinon.stub(admin, 'initializeApp');
-});
-
-afterEach(()=>{
-  adminInitStub.restore();
-  sandbox.restore();
-});
 describe('functions/logDonation', async () => {
+    beforeEach(()=>{
+    });
+
+    afterEach(()=>{
+        sandbox.restore();
+    });
+
   const helpers = require('../../functions/helpers/firebaseHelpers');
   const assignLearners = require('../../functions/helpers/assignLearners');
-  const myFunction= require('../../functions/logDonation');
+  const myFunction= proxyquire('../../functions/logDonation', {'firebase-admin': admin});
   const auth = admin.auth();
   const firestore = admin.firestore.Firestore;
   describe('functions/logDonation/logDonation', ()=>{
@@ -54,7 +49,7 @@ describe('functions/logDonation', async () => {
       getOrCreateStub.resolves('fake-donor');
       run = async () =>{
         const request = new PassThrough();
-        const write = sandbox.stub(request, 'write');
+        sandbox.stub(request, 'write');
         this.request.returns(request);
         return await myFunction.logDonation(docStub, res);
       };
@@ -65,7 +60,7 @@ describe('functions/logDonation', async () => {
     it('should accept a POST request with args', async ()=>{
       writeStub.resolves();
       const stubTime = firestore.Timestamp.now();
-      const timeStub = sandbox.stub(firestore.Timestamp, 'now').returns(stubTime);
+      sandbox.stub(firestore.Timestamp, 'now').returns(stubTime);
       await run();
       writeStub.should.have.been.calledWith({
         firstName: 'fake-firstName',
@@ -89,7 +84,7 @@ describe('functions/logDonation', async () => {
       docStub.body.campaignID = '';
       docStub.body.amount ='s';
       const stubTime = firestore.Timestamp.now();
-      const timeStub = sandbox.stub(firestore.Timestamp, 'now').returns(stubTime);
+      sandbox.stub(firestore.Timestamp, 'now').returns(stubTime);
       await run();
       writeStub.should.have.been.calledWith(sinon.match({
         firstName: 'fake-firstName',
@@ -115,11 +110,11 @@ describe('functions/logDonation', async () => {
   describe('functions/logDonation/writeDonation', async () => {
     let params;
     let fakeUser;
-    let docRefObject;
     let stubTime;
     beforeEach(() => {
       stubTime = firestore.Timestamp.now();
       params = {
+        chargeId: 'fake-charge-id',
         firstName: 'fake-firstName',
         email: 'fake@email.biz',
         amount: 5,
@@ -154,15 +149,12 @@ describe('functions/logDonation', async () => {
     });
     it('should call assign with the correct params', async () => {
       await myFunction.writeDonation(params);
-      assignLearners.assign.should.have.been.calledWith(
-          fakeUser.uid,
-          'fake-donation',
-          params.country,
-      );
+      firestore.CollectionReference.prototype.add.should.have.been.calledWith(params)
     });
     it('should call add with the correct params', async () => {
       await myFunction.writeDonation(params);
       firestore.CollectionReference.prototype.add.should.have.been.calledWith({
+        chargeId: params.chargeId,
         campaignID: params.campaignID,
         email: params.email,
         firstName: params.firstName,
@@ -190,6 +182,7 @@ describe('functions/logDonation', async () => {
       sandbox.spy(myFunction, 'writeDonation');
       await myFunction.writeDonation(params);
       firestore.CollectionReference.prototype.add.should.have.been.calledWith({
+        chargeId: params.chargeId,
         campaignID: params.campaignID,
         email: params.email,
         firstName: params.firstName,
@@ -205,13 +198,6 @@ describe('functions/logDonation', async () => {
         country: params.country,
         timestamp: params.timestamp,
       })
-    });
-    it('should call sendNewLearnersEmail with the correct params', async () => {
-      await myFunction.writeDonation(params);
-      helpers.sendEmail.should.have.been.calledWith(
-          'fake-donor',
-          'donationStart',
-      );
     });
   });
 });
