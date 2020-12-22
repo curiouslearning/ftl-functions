@@ -142,7 +142,7 @@ describe('functions/BatchManager', function() {
       await manager.commit();
       commitStub.should.have.been.calledOnce;
     });
-    it('should wait 1050ms between actions', async ()=>{
+    it('should wait 1050ms between actions', async ()=> {
       for (let i = 0; i < 500; i++) {
         if (docList[i]) {
           const id = docList[i].id;
