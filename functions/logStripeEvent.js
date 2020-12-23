@@ -4,6 +4,7 @@ const logDonation = require('./logDonation');
 const helpers = require('./helpers/firebaseHelpers');
 const {get, isEmpty} = require('lodash');
 const assignLearners = require('./helpers/assignLearners');
+const isNil = require('lodash/isNil');
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -109,6 +110,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
     const referralSource = splitString[2] || 'MISSING';
     const email = metadata.user_email;
     const firstName = metadata.user_first_name;
+    const donationSource = intent.donationSource;
     const params = {
       chargeId,
       stripeEventId: id,
@@ -120,6 +122,8 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
       country: country,
       referralSource: referralSource,
       frequency: 'one-time',
+      isStripePayment: !donationSource,
+      donationSource: donationSource || 'Stripe'
     };
     console.log('campaign is', params.campaignID);
     console.log('country is', params.country);
@@ -128,7 +132,7 @@ exports.handlePaymentIntentSucceeded = async (intent, id, chargeId, existingDona
       if (params[param] && params[param] === 'MISSING') {
         params['needsAttention'] = true;
         console.warn(`event ${id} is missing param ${param}`);
-      } else if (!params[param]) {
+      } else if (isNil(params[param])) {
         params[param] = 'MISSING';
         params['needsAttention'] = true;
         console.warn(`event ${id} is missing param ${param}`);

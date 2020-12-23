@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const sinon = require('sinon');
 const PassThrough = require('stream').PassThrough;
 const proxyquire = require('proxyquire');
+const set = require('lodash/set');
 let sandbox;
 
 describe('/functions/logStripeEvent', () => {
@@ -123,6 +124,8 @@ describe('/functions/logStripeEvent', () => {
         referralSource: 'fake-referral',
         frequency: 'one-time',
         sourceDonor: 'fake-donor',
+        donationSource: 'Stripe',
+        isStripePayment: true
       };
       writeStub = sandbox.stub(logDonation, 'writeDonation').resolves(
           {sourceDonor: 'fake-source-donor', donationID: 'fake-donation-ID', country: 'fake-country'});
@@ -132,6 +135,14 @@ describe('/functions/logStripeEvent', () => {
     });
 
     it('should parse the event object and pass it on', async () => {
+      await myFunction.handlePaymentIntentSucceeded(intent, id, 'fake-charge-id');
+      writeStub.should.have.been.calledWith(expected);
+    });
+
+    it('should save a third party donation source', async () => {
+      set(intent, 'donationSource', 'fake-donation-source');
+      set(expected, 'isStripePayment', false);
+      set(expected, 'donationSource', 'fake-donation-source');
       await myFunction.handlePaymentIntentSucceeded(intent, id, 'fake-charge-id');
       writeStub.should.have.been.calledWith(expected);
     });
