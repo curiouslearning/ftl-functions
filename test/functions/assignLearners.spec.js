@@ -190,20 +190,20 @@ describe('functions/helpers/assignLearners', async () => {
     afterEach(() => {
       sandbox.restore();
     });
-    it('should return 3', async () => {
+    it('should return 1', async () => {
       const count = myFunction.calculateUserCount(amount, learnerCount, cpl);
-      count.should.equal(3);
+      count.should.equal(1);
     });
-    it('should return 8', async () => {
+    it('should return 6', async () => {
       learnerCount = 5;
       const count = myFunction.calculateUserCount(amount, learnerCount, cpl);
-      count.should.equal(8);
+      count.should.equal(6);
     });
-    it('should return 3', async () => {
+    it('should return 1', async () => {
       amount =5;
       cpl = 0.25;
       const count = myFunction.calculateUserCount(amount, learnerCount, cpl);
-      count.should.equal(3);
+      count.should.equal(1);
     });
   });
 
