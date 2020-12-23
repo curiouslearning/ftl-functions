@@ -9,6 +9,7 @@ if (admin.apps.length === 0) {
 }
 const gmaps = new Client({});
 
+const DONATIONFILLTIMELINE = 14; // minimum days to fill a donation
 const CONTINENTS = [
   'Africa',
   'Americas',
@@ -165,7 +166,6 @@ exports.prioritizeLearnerQueue = function(queue) {
 
 // algorithm to calculate how many learners to assign to a donation
 exports.calculateUserCount = function(amount, learnerCount, costPerLearner) {
-  const DONATIONFILLTIMELINE = 7; // minimum days to fill a donation
   const learnerMax = Math.round(amount/costPerLearner);
   const maxDailyIncrease = Math.round(learnerMax/DONATIONFILLTIMELINE) || 1;
   return learnerCount + maxDailyIncrease;
