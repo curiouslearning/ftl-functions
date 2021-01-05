@@ -7,7 +7,14 @@ if (admin.apps.length === 0) {
 const auth = admin.auth();
 const firestore = admin.firestore();
 
-exports.updateAccountEmail = functions.https.onRequest(async (req, res) => {
+/* Force Update a user's primary account
+* WARNING: This will delete the user in the authentication database,
+* creating a new user with the new email address and the same unique identifier.
+* Any authentication history (date created, last login, email verified, etc.)
+* will be lost. This should only be used if the user was initialized with an
+* invalid email address or is otherwise locked out of their account.
+*/
+exports.forceUpdateAccountEmail = functions.https.onRequest(async (req, res)=> {
   if (!req.body) {
     return res.status(400).send('no data provided!');
   }
@@ -17,7 +24,7 @@ exports.updateAccountEmail = functions.https.onRequest(async (req, res) => {
   } else if (!params.newEmail) {
     return res.status(400).send('parameter "newEmail" is required');
   }
-  await auth.getUserByEmail(params.currentEmail).then((user) => {
+  return auth.getUserByEmail(params.currentEmail).then((user) => {
     const uid = user.uid;
     return auth.deleteUser(uid).then(() => {
       const updateDoc = firestore.collection('donor_master').doc(uid)

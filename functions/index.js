@@ -29,7 +29,7 @@ const stripeHooks = require('./logStripeEvent');
 exports.logPaymentIntent= stripeHooks.logPaymentIntent;
 exports.testPaymentIntent= stripeHooks.testPaymentIntent;
 const updateAccountEmail = require('./updateAccountEmail');
-exports.updateAccountEmail = updateAccountEmail.updateAccountEmail;
+exports.forceUpdateAccountEmail = updateAccountEmail.forceUpdateAccountEmail;
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }

@@ -12,9 +12,8 @@ let stubTime;
 let timeStub;
 let Timestamp;
 let DocumentReference;
-let Query;
 
-describe('functions/updateAccountEmail', () => {
+describe('functions/forceUpdateAccountEmail', () => {
   const myFunction = proxyquire('../../functions/updateAccountEmail', {
     'firebase-admin': stubbedAdmin,
   });
@@ -60,7 +59,7 @@ describe('functions/updateAccountEmail', () => {
       const request = new PassThrough();
       sandbox.stub(request, 'write');
       this.request.returns(request);
-      return await myFunction.updateAccountEmail({body}, res);
+      return await myFunction.forceUpdateAccountEmail({body}, res);
     };
   });
   afterEach(() => {
