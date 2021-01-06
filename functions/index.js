@@ -28,6 +28,8 @@ exports.forceRegionRecalculation = forceRegion.forceRegionRecalculation;
 const stripeHooks = require('./logStripeEvent');
 exports.logPaymentIntent= stripeHooks.logPaymentIntent;
 exports.testPaymentIntent= stripeHooks.testPaymentIntent;
+const updateAccountEmail = require('./updateAccountEmail');
+exports.forceUpdateAccountEmail = updateAccountEmail.forceUpdateAccountEmail;
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
