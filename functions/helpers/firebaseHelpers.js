@@ -168,6 +168,7 @@ const createDonor = function(params) {
       email: params.email,
       dateCreated: admin.firestore.Firestore.Timestamp.now(),
       donorID: uid,
+      referralSource: params.referralSource,
     };
     if (params.needsAttention) {
       data['needsAttention'] = true;

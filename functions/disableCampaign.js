@@ -15,10 +15,14 @@ exports.disableCampaign = functions.firestore.document('/user_pool/{docID}')
             .where('sourceCampaign', '==', after.sourceCampaign)
             .where('userStatus', '==', 'unassigned')
             .get().then((snap)=>{
-              if (snap.size === 0) {
+              if (snap.empty) {
                 const msgRef = admin.firestore().collection('campaigns')
                     .doc(after.sourceCampaign);
-                msgRef.update({isVisible: false});
+                msgRef.update({isVisible: false}).catch((err)=>{
+                  if (err.type === '5 NOT_FOUND') {
+                    console.warn(`attempted to disable nonexistent campaign ${after.sourceCampaign}`);
+                  }
+                });
                 return {status: 200, data: `successfully disabled ${after.sourceCampaign}`};
               }
               return new Promise((resolve)=>{
