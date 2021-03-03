@@ -21,10 +21,12 @@ exports.disableCampaign = functions.firestore.document('/user_pool/{docID}')
                 msgRef.update({isVisible: false}).catch((err)=>{
                   if (err.type === '5 NOT_FOUND') {
                     console.warn(`attempted to disable nonexistent campaign ${after.sourceCampaign}`);
+                    return {status: 500, data: {}};
                   }
                 });
                 return {status: 200, data: `successfully disabled ${after.sourceCampaign}`};
               }
+              console.log(`found snap of size ${snap.size}`);
               return new Promise((resolve)=>{
                 resolve({status: 200, data: 'found learners'});
               });
