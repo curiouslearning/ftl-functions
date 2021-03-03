@@ -35,7 +35,7 @@ describe('functions/disableCampaign', async () => {
         return {
           userStatus: 'assigned',
           country: 'fake-country',
-          sourceCampaign: 'fake-campaign'
+          sourceCampaign: 'fake-campaign',
         };
       },
     };
@@ -51,7 +51,7 @@ describe('functions/disableCampaign', async () => {
     }));
     getStub = sandbox.stub(firestore.Query.prototype, 'get');
     getStub.returns(new Promise((res) => {
-      res({size: 0});
+      res({empty: true, size: 0});
     }));
     wrapped = test.wrap(myFunction.disableCampaign);
   });
